@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.3...${npm.name}@0.1.4) (2025-11-08)
+
+### fix
+
+#### fixing command on unix
+
+> Adding '#node' to command so it'll be executable on unix
+
 ## [0.1.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.2...${npm.name}@0.1.3) (2025-11-08)
 
 ### fix

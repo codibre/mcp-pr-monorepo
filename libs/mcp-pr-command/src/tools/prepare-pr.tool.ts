@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import {
+	buildCopilotPrompt,
 	context,
 	createTempFile,
 	generateChangesFile,
@@ -180,11 +181,11 @@ After calling this tool, follow nextActions todo list rigourously`,
 			structuredContent: {
 				prNumber: existingPR || null,
 				prTemplate,
-				prDescriptionAndTitleInstructions: {
+				prDescriptionAndTitleInstructions: buildCopilotPrompt({
 					changesFile,
 					existingPRContent,
 					prTemplate,
-				},
+				}),
 				filesToRead,
 				cardLinks,
 				fetchCardInfoBeforeStep3: true,

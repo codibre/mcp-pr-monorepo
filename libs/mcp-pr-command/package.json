@@ -38,7 +38,11 @@
     "pr",
     "commit",
     "amend",
-    "squash"
+    "squash",
+    "pull request",
+    "merge request",
+    "git flow",
+    "trunk based"
   ],
   "author": "Farenheith",
   "license": "ISC",

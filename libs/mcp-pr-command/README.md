@@ -6,6 +6,12 @@ Tools and CLI to help with MCP-style PR workflows: detecting branches, preparing
 
 This package provides a small, user-focused CLI (`mcp-pr-command`) and programmatic utilities used by the CLI. It is designed to be consumed as a CLI tool (for example via `npx`) and offers several helpers to simplify pull request creation and maintenance.
 
+## See demonstration video!
+
+![PR opening demo](https://cdn.jsdelivr.net/gh/codibre/mcp-pr-monorepo@main/libs/mcp-pr-command/resources/PR%20opening.mp4)
+
+You can check out demonstration PR [here](https://github.com/codibre/mcp-pr-monorepo/pull/2)
+
 ## What this package offers
 
 The CLI exposes focused, scriptable tools to simplify common pull-request workflows by inspecting and operating on git history and remote PRs. Each tool is available as a CLI command and as programmatic exports.

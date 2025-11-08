@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.6...${npm.name}@0.2.0) (2025-11-08)
+
+### docs
+
+#### adding demonstration video
+
+#### fixing vídeo link
+
+
+### feat
+
+#### add PR template, global language option, keywords, and unify PR prompt logic
+
+> - Introduce a standardized pull request template to guide contributors and improve PR clarity and review quality.
+> - Enable users to define a default language for PR-related operations, enhancing internationalization and user experience.
+> - Update package.json with additional keywords to boost searchability and documentation visibility. No impact on runtime or functionality.
+> - Refactor PR workflow to always use buildCopilotPrompt, ensuring consistent instructions for PR titles and descriptions.
+
 ## [0.1.6](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.5...${npm.name}@0.1.6) (2025-11-08)
 
 ### fix

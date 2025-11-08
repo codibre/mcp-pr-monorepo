@@ -62,6 +62,7 @@
   "dependencies": {
     "@codibre/fluent-iterable": "^1.39.2",
     "@modelcontextprotocol/sdk": "^1.20.1",
+    "commander": "^14.0.2",
     "is-this-a-pigeon": "^1.2.0",
     "marked": "^9.1.6",
     "marked-terminal": "^6.2.0",

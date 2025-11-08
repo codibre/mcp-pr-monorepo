@@ -1,0 +1,67 @@
+const fs = require('fs');
+const path = require('path');
+
+const commitTemplatePath = path.resolve(process.cwd(), 'commit.hbs');
+const commitTemplate = fs.existsSync(commitTemplatePath)
+  ? fs.readFileSync(commitTemplatePath).toString()
+  : '#### {{subject}}\n\n{{#if body}}{{{body}}}{{/if}}';
+
+/** @type {import('release-it').ReleaseConfig} **/
+module.exports = {
+  git: {
+    tagName: '${npm.name}@${version}',
+    commitMessage: 'chore(${npm.name}): release v${version}',
+    requireCleanWorkingDir: false,
+    commitsPath: '.',
+    push: true,
+    pushRepo: 'origin',
+    requireCommits: false
+  },
+  npm: { publish: false, skipChecks: true },
+  github: { release: false },
+  hooks: {
+    'after:bump': 'pnpm publish --no-git-checks'
+  },
+  plugins: {
+    '@release-it/conventional-changelog': {
+      preset: {
+        name: 'conventionalcommits',
+        types: [
+          { type: 'feat', section: 'Features' },
+          { type: 'fix', section: 'Bug Fixes' },
+        ],
+      },
+      infile: 'CHANGELOG.md',
+      ignoreRecommendedBump: false,
+      strictSemVer: true,
+      commitsPath: '.',
+      gitRawCommitsOpts: {
+        path: '.',
+        // subject, blank line, body, blank line, hash on its own line
+        format: '%s%n%n%b%n%H',
+      },
+      writerOpts: {
+        commitPartial: commitTemplate,
+        transform: function (commit, context) {
+          const out = Object.assign({}, commit);
+          if (out.hash && typeof out.hash === 'string') out.hash = out.hash.substring(0, 7);
+          // If hash wasn't provided separately, try to extract it from the end of the body
+          if ((!out.hash || out.hash.length === 0) && out.body && typeof out.body === 'string') {
+            const m = out.body.match(/([0-9a-f]{7,40})$/m);
+            if (m) {
+              out.hash = m[1].substring(0, 7);
+              // remove the trailing hash (and any preceding newline/whitespace) from the body
+              out.body = out.body.replace(/(?:\r?\n)?[0-9a-f]{7,40}\s*$/m, '').trim();
+            }
+          }
+
+          if (out.body && typeof out.body === 'string') {
+            out.body = out.body.replace(/\r\n/g, '\n').split('\n').map(l => l.trim() ? ('> ' + l) : '').join('\n').trim();
+          }
+          return out;
+        },
+      },
+      skipOnEmpty: true,
+    },
+  },
+};

@@ -1,4 +1,4 @@
-![mcp-pr-command-logo](./resources/mcp-pr-command-logo.png)
+![mcp-pr-command-logo](https://cdn.jsdelivr.net/gh/codibre/mcp-pr-monorepo@main/libs/mcp-pr-command/resources/mcp-pr-command-logo.png)
 
 # MCP PR Command
 

@@ -74,14 +74,21 @@ Several tools (for example `prepare-pr`, `submit-pr` and `update-pr-by-link`) re
 
 #### How to execute
 
+First, install the package globally
 ```bash
-npx mcp-pr-command
+npm i -g mcp-pr-command
+```
+
+Then, you can execute it directly
+
+```bash
+mcp-pr-command
 ```
 
 To see available commands and options, run:
 
 ```bash
-npx mcp-pr-command --help
+mcp-pr-command --help
 ```
 
 ### Example: infer card/pr links
@@ -89,7 +96,7 @@ npx mcp-pr-command --help
 The CLI supports runtime inference of card and PR links by passing a JSON options object. Example:
 
 ```bash
-npx -g -y mcp-pr-command --mcp-options '{"cardLinkInferPattern":"[\w\-]+/(\d+)/(\d+)", "cardLinkWebSite":"https://link.com","cartPathLinkReplacePattern":"$1/card/$2/details"}'
+mcp-pr-command --mcp-options '{"cardLinkInferPattern":"[\w\-]+/(\d+)/(\d+)", "cardLinkWebSite":"https://link.com","cartPathLinkReplacePattern":"$1/card/$2/details"}'
 ```
 
 In the example above the CLI will use the provided regular pattern to extract card identifiers from text and map them into the `prLinkInferPattern` template.
@@ -98,7 +105,7 @@ You can also inform a config option file like this:
 
 
 ```bash
-npx -g -y mcp-pr-command --mcp-options-file mcp-pr-command-options.json
+mcp-pr-command --mcp-options-file mcp-pr-command-options.json
 ```
 
 ## How to configure it in VS Code for Copilot
@@ -112,15 +119,15 @@ The simplest way to register an MCP server is using the MCP extension command in
    - Provide the command according to your environment:
      - **Linux/macOS/Windows:**
        ```
-       npx -g -y mcp-pr-command
+       mcp-pr-command
        ```
     - **Windows (WSL + zsh):**
        ```
-       wsl zsh -i -c "npx -g -y mcp-pr-command"
+       wsl zsh -i -c "mcp-pr-command"
        ```
     - **Windows (WSL + bash):**
        ```
-       wsl bash -i -c "npx -g -y mcp-pr-command"
+       wsl bash -i -c "mcp-pr-command"
        ```
    - Enter a name for the MCP server (suggestion: `mcp-pr-command`).
    - Enter the execution scope (suggestion: `global`).

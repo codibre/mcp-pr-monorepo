@@ -1,8 +1,9 @@
 import { Nullable } from 'is-this-a-pigeon';
+import { context } from './context';
 
 const commonInstructions = `
 ## GENERAL INSTRUCTIONS
-- PR must be written in Portuguese, unless specified otherwise in .github/copilot-instructions.md
+- PR must be written in ${context.language ?? "same language of project's README.MD"}, unless specified otherwise in .github/copilot-instructions.md
 - ALWAYS respect PR template when present.
 - If current PR exists, use its content as context, but enforce PR template. Maybe current pr is not following it
 - Focus on intent and user-visible impact (what changed and why)

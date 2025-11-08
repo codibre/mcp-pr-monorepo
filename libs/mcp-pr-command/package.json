@@ -1,6 +1,6 @@
 {
   "name": "mcp-pr-command",
-  "version": "0.1.6",
+  "version": "0.1.5",
   "description": "MCP PR Command",
   "main": "dist/index.js",
   "bin": {
@@ -38,7 +38,11 @@
     "pr",
     "commit",
     "amend",
-    "squash"
+    "squash",
+    "pull request",
+    "merge request",
+    "git flow",
+    "trunk based"
   ],
   "author": "Farenheith",
   "license": "ISC",

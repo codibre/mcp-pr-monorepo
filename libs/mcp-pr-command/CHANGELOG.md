@@ -1,13 +1,5 @@
 # Changelog
 
-## [0.1.6](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.5...${npm.name}@0.1.6) (2025-11-08)
-
-### fix
-
-#### beterring logo
-
-> Making it transparent and better sized
-
 ## [0.1.5](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.4...${npm.name}@0.1.5) (2025-11-08)
 
 ### docs

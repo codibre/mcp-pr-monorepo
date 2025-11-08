@@ -8,6 +8,7 @@ export function startServer(options?: McpPRCommandOptions) {
 	if (options) {
 		const { cardLinkWebSite, cartPathLinkReplacePattern } = options;
 		context.cardLinkInferPattern = options.cardLinkInferPattern;
+		context.language = options.language;
 		if (cardLinkWebSite) {
 			context.cardLinkWebSitePattern = new RegExp(
 				`/${cardLinkWebSite}\/[^\s)]+/g`,

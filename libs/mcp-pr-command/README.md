@@ -2,9 +2,9 @@
 
 # MCP PR Command
 
-Tools and CLI to help with MCP-style PR workflows: detecting branches, preparing PR content, collecting commit diffs, rewriting commit messages and submitting pull requests.
+MCP stdio server to help with PR workflows: detecting branches, preparing PR content, collecting commit diffs, rewriting commit messages and submitting pull requests.
 
-This package provides a small, user-focused CLI (`mcp-pr-command`) and programmatic utilities used by the CLI. It is designed to be consumed as a CLI tool (for example via `npx`) and offers several helpers to simplify pull request creation and maintenance.
+This package provides an MCP server (`mcp-pr-command`) designed to be connected through GitHub Copilot in VS Code. It offers several tools to simplify pull request creation and maintenance.
 
 ## Demonstration video
 
@@ -14,7 +14,7 @@ You can check out demonstration PR [here](https://github.com/codibre/mcp-pr-mono
 
 ## What this package offers
 
-The CLI exposes focused, scriptable tools to simplify common pull-request workflows by inspecting and operating on git history and remote PRs. Each tool is available as a CLI command and as programmatic exports.
+This MCP server exposes focused tools to simplify common pull-request workflows by inspecting and operating on git history and remote PRs. Each tool is available as an MCP tool that can be invoked through GitHub Copilot.
 
 
 Core tools and what they do:
@@ -61,11 +61,9 @@ Notes and recommended usage:
 - For editing commit history, always run `get-commit-messages` first to review the changes before calling `replace-commit-messages` or `squash-commits`.
 - The tools rely on standard git and the GitHub CLI (`gh`) where needed. Ensure those are available in your PATH when using `prepare-pr`, `submit-pr`, or `update-pr-by-link`.
 
-If you'd like, I can add a short example command for the common prepare+submit flow or add one-line usage examples for each tool.
+## How to install the MCP server
 
-## How to run the CLI
-
-### Prerequisite
+### Prerequisites
 
 #### Git
 
@@ -73,39 +71,29 @@ Of course, you need to have git installed and running on your system.
 
 #### GitHub CLI (gh)
 
-Several tools (for example `prepare-pr`, `submit-pr` and `update-pr-by-link`) rely on the GitHub CLI (`gh`) to query and create PRs. Before using those commands, please install the official GitHub CLI and make sure you're logged in to your GitHub account:
+Several tools (for example `prepare-pr`, `submit-pr` and `update-pr-by-link`) rely on the GitHub CLI (`gh`) to query and create PRs. Before using those tools, please install the official GitHub CLI and make sure you're logged in to your GitHub account:
 
 - Official site: https://cli.github.com/
 - After installing, run `gh auth login` and follow the prompts to authenticate.
 
-#### How to execute
+### Installation
 
-First, install the package globally
+Install the package globally:
 ```bash
 npm i -g mcp-pr-command
 ```
 
-Then, you can execute it directly
-
-```bash
-mcp-pr-command
-```
-
-To see available commands and options, run:
-
-```bash
-mcp-pr-command --help
-```
+After installation, you need to configure it in VS Code (see next section).
 
 ### Example: infer card/pr links
 
-The CLI supports runtime inference of card and PR links by passing a JSON options object. Example:
+The MCP server supports runtime inference of card and PR links by passing a JSON options object. Example:
 
 ```bash
 mcp-pr-command --mcp-options '{"cardLinkInferPattern":"[\w\-]+/(\d+)/(\d+)", "cardLinkWebSite":"https://link.com","cartPathLinkReplacePattern":"$1/card/$2/details"}'
 ```
 
-In the example above the CLI will use the provided regular pattern to extract card identifiers from text and map them into the `prLinkInferPattern` template.
+In the example above the server will use the provided regular pattern to extract card identifiers from text and map them into the `prLinkInferPattern` template.
 
 You can also inform a config option file like this:
 
@@ -140,3 +128,4 @@ The simplest way to register an MCP server is using the MCP extension command in
 4. Confirm and save.
 
 > This will register the MCP server and allow Copilot to use these tools to generate PR descriptions and rewrite commits!
+> Remember you can add --mcp-options or --mcp-options-file to the call so you can customize card link inferring from branch

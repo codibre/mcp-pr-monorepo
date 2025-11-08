@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { readFileSync } from 'fs';
 import { Command } from 'commander';
 import { startServer } from './main';

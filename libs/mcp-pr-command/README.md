@@ -89,7 +89,7 @@ npx mcp-pr-command --help
 The CLI supports runtime inference of card and PR links by passing a JSON options object. Example:
 
 ```bash
-npx mcp-pr-command --mcp-options '{"cardLinkInferPattern":"[\w\-]+/(\d+)/(\d+)", "cardLinkWebSite":"https://link.com","cartPathLinkReplacePattern":"$1/card/$2/details"}'
+npx -g -y mcp-pr-command --mcp-options '{"cardLinkInferPattern":"[\w\-]+/(\d+)/(\d+)", "cardLinkWebSite":"https://link.com","cartPathLinkReplacePattern":"$1/card/$2/details"}'
 ```
 
 In the example above the CLI will use the provided regular pattern to extract card identifiers from text and map them into the `prLinkInferPattern` template.
@@ -98,7 +98,7 @@ You can also inform a config option file like this:
 
 
 ```bash
-npx mcp-pr-command --mcp-options-file mcp-pr-command-options.json
+npx -g -y mcp-pr-command --mcp-options-file mcp-pr-command-options.json
 ```
 
 ## How to configure it in VS Code for Copilot
@@ -112,15 +112,15 @@ The simplest way to register an MCP server is using the MCP extension command in
    - Provide the command according to your environment:
      - **Linux/macOS/Windows:**
        ```
-       npx mcp-pr-command
+       npx -g -y mcp-pr-command
        ```
     - **Windows (WSL + zsh):**
        ```
-       wsl zsh -i -c "npx mcp-pr-command"
+       wsl zsh -i -c "npx -g -y mcp-pr-command"
        ```
     - **Windows (WSL + bash):**
        ```
-       wsl bash -i -c "npx mcp-pr-command"
+       wsl bash -i -c "npx -g -y mcp-pr-command"
        ```
    - Enter a name for the MCP server (suggestion: `mcp-pr-command`).
    - Enter the execution scope (suggestion: `global`).

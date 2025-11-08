@@ -9,7 +9,9 @@ export function startServer(options?: McpPRCommandOptions) {
 		const { cardLinkWebSite, cartPathLinkReplacePattern } = options;
 		context.cardLinkInferPattern = options.cardLinkInferPattern;
 		if (cardLinkWebSite) {
-			context.cardLinkWebSitePattern = new RegExp(`/${cardLinkWebSite}/g`);
+			context.cardLinkWebSitePattern = new RegExp(
+				`/${cardLinkWebSite}\/[^\s)]+/g`,
+			);
 			if (cartPathLinkReplacePattern) {
 				const start = cardLinkWebSite.endsWith('/')
 					? cardLinkWebSite.substring(0, cardLinkWebSite.length - 1)

@@ -2,7 +2,12 @@ import z from 'zod';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { createTempFile, generateChangesFile, ToolRegister } from '../internal';
+import {
+	context,
+	createTempFile,
+	generateChangesFile,
+	ToolRegister,
+} from '../internal';
 import { inferCardLinkFromBranch } from '../internal/card-link-utils';
 import { Nullable, assertNonNullish } from 'is-this-a-pigeon';
 import { McpServer, ToolCallback } from '../internal';
@@ -48,7 +53,7 @@ Input schema:
 }
 Usage example:
 {
-  "cwd": "/home/user/boti/intern-plataforma-internacional-dev-scripts",
+  "cwd": "/home/user/my-repo",
   "targetBranch": "staging",
   "currentBranch": "mcp-pr-server",
   "cardLink": "https://tracker/card/123"
@@ -128,11 +133,15 @@ After calling this tool, follow nextActions todo list rigourously`,
 		if (cardLink) candidateSet.add(cardLink);
 		const inferred = inferCardLinkFromBranch(currentBranch);
 		if (inferred) candidateSet.add(inferred);
-		if (existingPRContent && typeof existingPRContent === 'object') {
+		const urlRegex = context.cardLinkWebSitePattern;
+		if (
+			urlRegex &&
+			existingPRContent &&
+			typeof existingPRContent === 'object'
+		) {
 			const title = existingPRContent.title || '';
 			const body = existingPRContent.body || '';
 			const textToScan = `${title}\n${body}`;
-			const urlRegex = /https:\/\/grupoboticario\.kanbanize\.com\/[^\s)]+/g;
 			const matches = textToScan.match(urlRegex) || [];
 			for (const m of matches) candidateSet.add(m);
 		}
@@ -178,7 +187,6 @@ After calling this tool, follow nextActions todo list rigourously`,
 				},
 				filesToRead,
 				cardLinks,
-				mcpToolHint: 'get-url-for-grupoboticario-kanbanize-com',
 				fetchCardInfoBeforeStep3: true,
 				nextActions: nextActions.map((x, idx) => `${idx + 1}. ${x}`),
 			},

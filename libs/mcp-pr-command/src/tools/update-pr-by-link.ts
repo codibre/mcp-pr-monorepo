@@ -38,8 +38,8 @@ Input schema:
 
 Usage example:
 {
-  "cwd": "/home/user/boti/intern-plataforma-internacional-dev-scripts",
-  "prUrl": "https://github.com/grupoboticario/intern-plataforma-internacional-dev-scripts/pull/123"
+  "cwd": "/home/user/my-repo",
+  "prUrl": "https://github.com/codibre/mcrp-pr-monorepo/pull/123"
 }`,
 				inputSchema,
 				outputSchema: PreparePrTool.preparePrOutputSchema,

@@ -2,15 +2,62 @@ const fs = require('fs');
 const path = require('path');
 
 const commitTemplatePath = path.resolve(process.cwd(), 'commit.hbs');
-const commitTemplate = fs.existsSync(commitTemplatePath)
+let commitTemplate = fs.existsSync(commitTemplatePath)
   ? fs.readFileSync(commitTemplatePath).toString()
   : '#### {{subject}}\n\n{{#if body}}{{{body}}}{{/if}}';
+
+// Determine repository URL (prefer package.json repository, fall back to git remote)
+function normalizeRepoUrl(raw) {
+  if (!raw) return null;
+  // remove git+ prefix and trailing .git
+  let url = raw.replace(/^git\+/, '').replace(/\.git$/, '');
+  // Convert ssh style 'git@github.com:owner/repo' to https
+  const sshMatch = url.match(/^git@([^:]+):(.+)$/);
+  if (sshMatch) {
+    url = `https://${sshMatch[1]}/${sshMatch[2]}`;
+  }
+  // If it's an scp-like ssh url (ssh://git@...), remove the ssh://
+  url = url.replace(/^ssh:\/\//, 'https://');
+  return url;
+}
+
+function detectRepoUrl() {
+  try {
+    const pkgPath = path.resolve(process.cwd(), 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath).toString());
+      const repo = pkg.repository && (pkg.repository.url || pkg.repository);
+      const normalized = normalizeRepoUrl(repo);
+      if (normalized) return normalized;
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  try {
+    const { execSync } = require('child_process');
+    const raw = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
+    const normalized = normalizeRepoUrl(raw);
+    if (normalized) return normalized;
+  } catch (e) {
+    // ignore
+  }
+
+  return null;
+}
+
+const repoUrl = detectRepoUrl();
+if (repoUrl && commitTemplate.indexOf('/commit/{{hash}}') !== -1) {
+  // replace any hardcoded commit host path with the detected repo URL
+  // matches patterns like https://github.com/owner/repo/commit/{{hash}}
+  commitTemplate = commitTemplate.replace(/https?:\/\/[^\s\/]+\/[\w.-]+\/[\w.-]+\/commit\/\{\{hash\}\}/g, `${repoUrl}/commit/{{hash}}`);
+}
 
 /** @type {import('release-it').ReleaseConfig} **/
 module.exports = {
   git: {
     tagName: '${npm.name}@${version}',
-    commitMessage: 'chore(${npm.name}): release v${version}',
+    commitMessage: 'chore(${npm.name}): release v${version} [skip ci]',
     requireCleanWorkingDir: false,
     commitsPath: '.',
     push: true,
@@ -59,6 +106,17 @@ module.exports = {
             out.body = out.body.replace(/\r\n/g, '\n').split('\n').map(l => l.trim() ? ('> ' + l) : '').join('\n').trim();
           }
           return out;
+        },
+        // Map group titles (commit types) to friendly section headers
+        groupTitle: function (group) {
+          const map = {
+            feat: 'Features:',
+            fix: 'Bug Fixes:',
+          };
+          if (group && group.title) {
+            return map[group.title] || (group.title.charAt(0).toUpperCase() + group.title.slice(1) + ':');
+          }
+          return '';
         },
       },
       skipOnEmpty: true,

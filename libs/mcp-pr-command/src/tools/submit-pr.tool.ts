@@ -45,7 +45,7 @@ Input schema:
 }
 Usage example:
 {
-  "cwd": "/home/user/boti/intern-plataforma-internacional-dev-scripts",
+  "cwd": "/home/user/my-repo",
   "prNumber": null,
   "title": "feat: Add MCP PR server",
   "body": "Implements MCP server for local PR generation.",

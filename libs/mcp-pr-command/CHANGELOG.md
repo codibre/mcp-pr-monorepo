@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.0...${npm.name}@0.2.1) (2025-11-08)
+
+### fix
+
+#### fixing docs
+
+> Docs refered to this lib as a cli, but it's actually
+> a MCP server
+
 ## [0.2.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.6...${npm.name}@0.2.0) (2025-11-08)
 
 ### docs

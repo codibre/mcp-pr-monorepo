@@ -119,6 +119,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.20.1
         version: 1.21.1
+      commander:
+        specifier: ^14.0.2
+        version: 14.0.2
       is-this-a-pigeon:
         specifier: ^1.2.0
         version: 1.2.0
@@ -1720,6 +1723,10 @@ packages:
 
   commander@14.0.0:
     resolution: {integrity: sha512-2uM9rYjPvyq39NwLRqaiLtWHyDC1FvryJDa2ATTVims5YAS4PupsEQsDvP14FqhFr0P49CYDugi59xaxJlTXRA==}
+    engines: {node: '>=20'}
+
+  commander@14.0.2:
+    resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
     engines: {node: '>=20'}
 
   commander@2.20.3:
@@ -6240,6 +6247,8 @@ snapshots:
       delayed-stream: 1.0.0
 
   commander@14.0.0: {}
+
+  commander@14.0.2: {}
 
   commander@2.20.3: {}
 

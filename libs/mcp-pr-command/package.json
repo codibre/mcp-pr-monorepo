@@ -1,6 +1,6 @@
 {
   "name": "mcp-pr-command",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "MCP PR Command",
   "main": "dist/index.js",
   "bin": {

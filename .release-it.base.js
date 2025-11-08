@@ -50,8 +50,12 @@ const repoUrl = detectRepoUrl();
 if (repoUrl && commitTemplate.indexOf('/commit/{{hash}}') !== -1) {
   // replace any hardcoded commit host path with the detected repo URL
   // matches patterns like https://github.com/owner/repo/commit/{{hash}}
-  commitTemplate = commitTemplate.replace(/https?:\/\/[^\s\/]+\/[\w.-]+\/[\w.-]+\/commit\/\{\{hash\}\}/g, `${repoUrl}/commit/{{hash}}`);
+    commitTemplate = commitTemplate.replace(/https?:\/\/[^\s\/]+\/[\w.-]+\/[\w.-]+\/commit\/\{\{hash\}\}/g, `${repoUrl}/commit/{{hash}}`);
 }
+  // Replace placeholder used in commit.hbs
+  if (commitTemplate.indexOf('__REPO_URL__') !== -1) {
+    commitTemplate = commitTemplate.replace(/__REPO_URL__/g, repoUrl);
+  }
 
 /** @type {import('release-it').ReleaseConfig} **/
 module.exports = {

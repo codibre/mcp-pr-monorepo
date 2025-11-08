@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.0...${npm.name}@0.1.1) (2025-11-08)
+## [0.1.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.0...mcp-pr-command@0.1.1) (2025-11-08)
 
 ### fix
 

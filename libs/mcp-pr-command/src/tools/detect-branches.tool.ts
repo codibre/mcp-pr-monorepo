@@ -36,7 +36,7 @@ export class DetectBranchesTool implements ToolRegister {
     }
     Usage example:
     {
-      "cwd": "/home/user/boti/intern-plataforma-internacional-dev-scripts"
+      "cwd": "/home/user/my-repo"
     }
     After calling this tool, follow nextActions todo list rigourously.`,
 				inputSchema,

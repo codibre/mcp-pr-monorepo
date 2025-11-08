@@ -1,3 +1,5 @@
+![mcp-pr-command-logo](./resources/mcp-pr-command-logo.png)
+
 # MCP PR Command
 
 Tools and CLI to help with MCP-style PR workflows: detecting branches, preparing PR content, collecting commit diffs, rewriting commit messages and submitting pull requests.

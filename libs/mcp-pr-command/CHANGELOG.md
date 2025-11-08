@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.1...${npm.name}@0.1.2) (2025-11-08)
+
+### fix
+
+#### fixing changelog generation
+
+> Changelog generation wasn't correctly creating
+> link references. Fixing it
+
 ## [0.1.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.0...mcp-pr-command@0.1.1) (2025-11-08)
 
 ### fix

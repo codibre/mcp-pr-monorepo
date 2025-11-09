@@ -1,7 +1,8 @@
-import { McpServer, ToolCallback } from '../internal';
+import { context, McpServer, ToolCallback } from '../internal';
 import { getBranchSchema, ToolRegister } from 'src/internal';
 import { execSync } from 'child_process';
 import z from 'zod';
+import { ChangingBranchType } from 'src/mcp-pr-command-options';
 
 const inputSchema: z.ZodRawShape = {
 	type: z
@@ -16,7 +17,9 @@ const inputSchema: z.ZodRawShape = {
 	baseBranch: z
 		.string()
 		.optional()
-		.describe('Optional base branch to create the new branch from'),
+		.describe(
+			'Optional base branch to create the new branch from. If not informed will be chosen based on branch schema. Only inform this if user explicitly requests so.',
+		),
 	cwd: z
 		.string()
 		.min(1)
@@ -39,14 +42,6 @@ use it to determine branch name and type (feat/fix/hotfix).
 - Short description may be extracted from card title and content, if available, but don't use more than 10 words, and avoid special characters.
 - Notice type and the rest of the branch name must be separated by a slash (/), not by a dash (-).
 If type is specified within user prompt, use that instead.
-Branch schema can be defined by the user into repo file branches.ini
-Example:
-FEAT_BRANCH=staging
-BUGFIX_BRANCH=staging
-HOTFIX_BRANCH=main
-RELEASE_BRANCH=staging
-DEV_BRANCH=develop
-
 
 This examples are the defualt branch schema, too. You can inform the user
 of this default values if questioned about it.
@@ -69,17 +64,16 @@ IMPORTANT: If user requests to open a PR, don't use this tool, as he's already p
 	 * }
 	 */
 	async createBranchHandler(params: {
-		type: 'feat' | 'fix' | 'hotfix' | 'release';
+		type: ChangingBranchType;
 		suffix: string;
 		baseBranch?: string;
 		cwd: string;
 	}) {
 		const { type, suffix, baseBranch, cwd } = params;
-		// Read branch schema from branches.ini if available
 		const schema = getBranchSchema(cwd);
 
 		// Determine default base branch if not provided
-		const defaultBase = schema[type] || 'staging';
+		const defaultBase = schema[context.branchMapping[type].origin] ?? 'main';
 		const branchFrom = baseBranch || defaultBase;
 
 		// Normalize suffix: replace spaces with dashes, lowercase

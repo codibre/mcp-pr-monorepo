@@ -1,3 +1,10 @@
-import { InternalOptions } from './internal-options';
+import {
+	DEFAULT_BRANCH_MAPPING,
+	DEFAULT_BRANCH_SCHEMA,
+	InternalOptions,
+} from './internal-options';
 
-export const context: InternalOptions = {};
+export const context: InternalOptions = {
+	branchMapping: DEFAULT_BRANCH_MAPPING,
+	branchSchema: DEFAULT_BRANCH_SCHEMA,
+};

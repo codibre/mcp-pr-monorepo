@@ -53,7 +53,7 @@ Combine the commits between a base and head into a single commit with a supplied
 
 ### create-branch
 
-Create a new feature/fix/hotfix/release branch following configurable branch schemas (from branches.ini) or sane defaults. Normalizes suffixes and checks out from the chosen base.
+Create a new feature/fix/hotfix/release branch following configurable branch schemas (from McpPRCommandOptions) or sane defaults. Normalizes suffixes and checks out from the chosen base.
 
 Notes and recommended usage:
 

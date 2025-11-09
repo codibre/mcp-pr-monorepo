@@ -1,3 +1,18 @@
+export interface BranchSchema {
+	production: string;
+	homologation: string;
+	development: string;
+}
+
+export type ChangingBranchType = 'feat' | 'fix' | 'hotfix' | 'release';
+
+export interface BranchMappingItem {
+	origin: keyof BranchSchema;
+	target: keyof BranchSchema;
+}
+
+export type BranchSchemaCallback = (cwd: string) => BranchSchema;
+
 /**
  * Options for configuring the MCP PR Command behavior.
  */
@@ -86,4 +101,16 @@ export interface McpPRCommandOptions {
 	 *  MCP to be used only for [company name] project, with REPO organization being [organization name].
 	 **/
 	complementaryMcpDescription?: string;
+
+	/**
+	 * Custom branch schema to define production, homologation, and development branches.
+	 * If not provided, main will be assumed to everyone (trunk based).
+	 */
+	branchSchema?: BranchSchema | BranchSchemaCallback;
+
+	/**
+	 * Custom branch mapping to define origin and target branches for different branch types.
+	 * If not provided, default mapping will be used.
+	 */
+	branchMapping?: Record<ChangingBranchType, BranchMappingItem>;
 }

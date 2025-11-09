@@ -32,4 +32,11 @@ What is being changed? Include a checklist.
 
 ## 🎉 Made with love
 
-<!-- Insert here a humorous but respectful gif about programming (choose a url from https://giphy.com/search/code-fun, https://giphy.com/search/code-cat or https://giphy.com/search/code-dog), search there and then choose one of the gifs randomly. Make sure not to always choose the same one and avoid discussing this too much in the chat) -->
+<!--
+Insert here a humorous but respectful gif about programming.
+- Choose a random keyword from: code-fun, code-cat, code-dog.
+- Use a random number (e.g., from Math.random() or the current timestamp) to select a different GIF from the search results each time.
+- Do not use the same GIF as the previous PR.
+- Avoid always picking the first result.
+- Example sources: https://giphy.com/search/code-fun, https://giphy.com/search/code-cat, https://giphy.com/search/code-dog
+-->

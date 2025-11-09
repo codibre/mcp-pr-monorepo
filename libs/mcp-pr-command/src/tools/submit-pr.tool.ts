@@ -33,7 +33,7 @@ export class SubmitPrTool implements ToolRegister {
 Creates or updates the pull request on the remote repository using the provided title, body, and branch information.
 After completing operation:
   - Print PR URL, if returned, to the user;
-  - IF MCP for businessmap is available, add a comment to the card with the PR link. The link must be set as a <a> tag to be clickable.
+  - IF MCP for card app/website is available, add a comment to the card with the PR link. The link must be set as a <a> tag to be clickable.
 Input schema:
 {
   cwd: string,           // Required. Current working directory of the repository.
@@ -149,7 +149,7 @@ Usage example:
 				prUrl,
 				nextActions: [
 					'1. Print PR URL, if returned, to the user',
-					'2. IF MCP for businessmap is available, add a comment to the card with the PR link.',
+					'2. IF MCP for card app/website is available, add a comment to the card with the PR link.',
 				],
 			},
 		};

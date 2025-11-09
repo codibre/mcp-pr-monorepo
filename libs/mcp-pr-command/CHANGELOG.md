@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.1...${npm.name}@0.3.0) (2025-11-09)
+
+### feat
+
+#### allow company customization, improve card link extraction, and refactor options
+
+> - Refactor `cardLinkInferPattern` to `branchCardIdExtractPattern` throughout the codebase
+> - Enable advanced customization via options and config file
+> - Update and expand README with CLI and Node.js usage examples
+> - Improve unit tests for language and non-language scenarios
+> - Adjust messages and instructions for internationalization and clarity
+> - Fix minor bugs and inconsistencies in internal utilities
+
 ## [0.2.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.0...${npm.name}@0.2.1) (2025-11-08)
 
 ### fix

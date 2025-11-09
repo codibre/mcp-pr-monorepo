@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const commitTemplatePath = path.resolve(process.cwd(), 'commit.hbs');
+const commitTemplatePath = path.resolve(__dirname, 'commit.hbs');
 let commitTemplate = fs.existsSync(commitTemplatePath)
   ? fs.readFileSync(commitTemplatePath).toString()
   : '#### {{subject}}\n\n{{#if body}}{{{body}}}{{/if}}';
@@ -51,6 +51,21 @@ const typeMap = {
   fix: 'Fixes:',
 }
 
+// Get package name from package.json
+function getPackageName() {
+  try {
+    const pkgPath = path.resolve(process.cwd(), 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      return pkg.name;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return null;
+}
+
+const packageName = getPackageName();
 const repoUrl = detectRepoUrl();
 if (repoUrl && commitTemplate.indexOf('/commit/{{hash}}') !== -1) {
   // replace any hardcoded commit host path with the detected repo URL
@@ -75,9 +90,9 @@ module.exports = {
   },
   npm: { publish: false, skipChecks: true },
   github: { release: false },
-  // hooks: {
-  //   'after:bump': 'pnpm publish --no-git-checks'
-  // },
+  hooks: {
+    'after:bump': 'pnpm publish --no-git-checks'
+  },
   plugins: {
     '@release-it/conventional-changelog': {
       preset: {
@@ -98,8 +113,18 @@ module.exports = {
       },
       writerOpts: {
         commitPartial: commitTemplate,
-        transform: function (commit, context) {
+        headerPartial: '## [{{version}}]({{host}}/{{owner}}/{{repository}}/compare/{{previousTag}}...{{packageName}}@{{version}}) ({{date}})',
+        finalizeContext: function (context) {
+          context.packageName = packageName;
+          return context;
+        },
+        transform: function (commit) {
           const out = Object.assign({}, commit);
+
+          // Filter out release commits (they shouldn't appear in changelog)
+          if (out.type === 'chore' && out.scope && /release v\d+\.\d+\.\d+/.test(out.subject)) {
+            return null;
+          }
 
           // Map commit type to section title
           const typeTitle = typeMap[out.type];

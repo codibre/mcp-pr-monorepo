@@ -1,6 +1,7 @@
 # Changelog
 
-## [0.3.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.1...${npm.name}@0.3.2) (2025-11-09)
+
+## [0.3.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.1...mcp-pr-command@0.3.2) (2025-11-09)
 
 ### Fixes:
 
@@ -14,7 +15,7 @@
 
 > This improves the clarity and usability of generated changelogs.
 
-## [0.3.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.0...${npm.name}@0.3.1) (2025-11-09)
+## [0.3.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.0...mcp-pr-command@0.3.1) (2025-11-09)
 
 ### Fixes:
 
@@ -26,7 +27,7 @@
 
 </details>
 
-## [0.3.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.1...${npm.name}@0.3.0) (2025-11-09)
+## [0.3.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.1...mcp-pr-command@0.3.0) (2025-11-09)
 
 ### Features:
 
@@ -42,7 +43,7 @@
 
 </details>
 
-## [0.2.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.0...${npm.name}@0.2.1) (2025-11-08)
+## [0.2.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.0...mcp-pr-command@0.2.1) (2025-11-08)
 
 ### Fixes:
 
@@ -54,7 +55,7 @@
 
 </details>
 
-## [0.2.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.6...${npm.name}@0.2.0) (2025-11-08)
+## [0.2.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.6...mcp-pr-command@0.2.0) (2025-11-08)
 
 ### docs
 
@@ -81,7 +82,7 @@
 
 </details>
 
-## [0.1.6](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.5...${npm.name}@0.1.6) (2025-11-08)
+## [0.1.6](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.5...mcp-pr-command@0.1.6) (2025-11-08)
 
 ### Fixes:
 
@@ -92,7 +93,7 @@
 
 </details>
 
-## [0.1.5](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.4...${npm.name}@0.1.5) (2025-11-08)
+## [0.1.5](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.4...mcp-pr-command@0.1.5) (2025-11-08)
 
 ### docs
 
@@ -109,7 +110,7 @@
 
 </details>
 
-## [0.1.4](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.3...${npm.name}@0.1.4) (2025-11-08)
+## [0.1.4](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.3...mcp-pr-command@0.1.4) (2025-11-08)
 
 ### Fixes:
 
@@ -120,7 +121,7 @@
 
 </details>
 
-## [0.1.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.2...${npm.name}@0.1.3) (2025-11-08)
+## [0.1.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.2...mcp-pr-command@0.1.3) (2025-11-08)
 
 ### Fixes:
 
@@ -129,7 +130,7 @@
 
 </details>
 
-## [0.1.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.1...${npm.name}@0.1.2) (2025-11-08)
+## [0.1.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.1...mcp-pr-command@0.1.2) (2025-11-08)
 
 ### Fixes:
 

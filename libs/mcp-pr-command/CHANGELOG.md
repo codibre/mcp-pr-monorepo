@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.3...mcp-pr-command@0.4.0) (2025-11-09)
+### Features:
+
+<details>
+<summary>add branch schema and mapping options for flexible branch workflows</summary>
+
+
+> - Adds `branchSchema` and `branchMapping` options to define main branch names and mapping for branch types
+> - Removes support for the `branches.ini` file, centralizing configuration via options/typescript
+> - Refactors utilities to use the new configuration model
+> - Updates documentation and examples
+> - Removes obsolete files/functions (`path-utils.ts`, `shell-utils.ts`)
+> - Adds and updates unit tests to cover new flows
+> - Enables easy customization of branch workflows for different strategies (trunk-based, git flow, etc)
+> - Maintains backward compatibility for users who do not customize options
+
+
+
+[View commit `3b7eb6b`](https://github.com/codibre/mcp-pr-monorepo/commit/3b7eb6b)
+
+
+</details>
+
 ## [0.3.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.2...mcp-pr-command@0.3.3) (2025-11-09)
 ### Fixes:
 

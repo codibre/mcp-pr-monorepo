@@ -1,6 +1,7 @@
 export interface InternalOptions {
-	cardLinkInferPattern?: RegExp;
+	branchCardIdExtractPattern?: RegExp;
 	cardLinkWebSitePattern?: RegExp;
 	prLinkInferPattern?: string;
 	language?: string;
+	basePullRequestPrompt?: string;
 }

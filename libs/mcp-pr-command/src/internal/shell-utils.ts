@@ -4,28 +4,23 @@ import {
 	ExecFileSyncOptionsWithStringEncoding,
 	ExecSyncOptionsWithStringEncoding,
 } from 'child_process';
+import { attempt } from './attempt';
 
-export function safeExecFileSync(
+export const safeExecFileSync = (
 	cmd: string,
 	args: string[] = [],
 	opts?: ExecFileSyncOptionsWithStringEncoding,
-): string | Buffer | null {
-	try {
-		return execFileSync(cmd, args, opts);
-	} catch {
-		return null;
-	}
-}
+): string | Buffer | null =>
+	attempt(
+		() => execFileSync(cmd, args, opts),
+		() => null,
+	);
 
-export function safeExecSync(
+export const safeExecSync = (
 	cmd: string,
 	opts?: ExecSyncOptionsWithStringEncoding,
-): string | Buffer | null {
-	try {
-		return execSync(cmd, opts);
-	} catch {
-		return null;
-	}
-}
-
-export default { safeExecFileSync, safeExecSync };
+): string | Buffer | null =>
+	attempt(
+		() => execSync(cmd, opts),
+		() => null,
+	);

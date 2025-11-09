@@ -1,6 +1,6 @@
 export * from './attempt';
 export * from './branch-utils';
-export * from './buildCopilotPrompt';
+export * from './build-copilot-prompt';
 export * from './card-link-utils';
 export * from './context';
 export * from './get-error-message';

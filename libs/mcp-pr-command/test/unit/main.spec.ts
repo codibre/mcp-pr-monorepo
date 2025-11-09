@@ -5,7 +5,7 @@ const McpServerMock = jest.fn().mockImplementation((opts) => ({
 	options: opts,
 }));
 const context: InternalOptions = {
-	cardLinkInferPattern: undefined,
+	branchCardIdExtractPattern: undefined,
 	cardLinkWebSitePattern: undefined,
 	prLinkInferPattern: undefined,
 };
@@ -41,7 +41,7 @@ const { startServer } = require('../../src/main');
 describe('startServer', () => {
 	beforeEach(() => {
 		// reset context
-		context.cardLinkInferPattern = undefined;
+		context.branchCardIdExtractPattern = undefined;
 		context.cardLinkWebSitePattern = undefined;
 		context.prLinkInferPattern = undefined;
 	});
@@ -71,10 +71,10 @@ describe('startServer', () => {
 		startServer({
 			cardLinkWebSite: 'https://example.com/',
 			cartPathLinkReplacePattern: '/path/to/pr',
-			cardLinkInferPattern: 'CARD-\\d+',
+			branchCardIdExtractPattern: 'CARD-\\d+',
 		} as any);
 
-		expect(context.cardLinkInferPattern).toBe('CARD-\\d+');
+		expect(context.branchCardIdExtractPattern).toBe('CARD-\\d+');
 		// cardLinkWebSitePattern should be a RegExp when created
 		expect(context.cardLinkWebSitePattern).toBeInstanceOf(RegExp);
 		expect(context.prLinkInferPattern).toBe('https://example.com/path/to/pr');

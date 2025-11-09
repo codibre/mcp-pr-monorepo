@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.1...${npm.name}@0.3.2) (2025-11-09)
+
+### Fixes:
+
+#### improve changelog section headers and layout
+
+> - Added typeMap to map commit types to section titles (e.g., 'fix' to 'Fixes:')
+> - Updated changelog grouping and sorting for better readability
+> - Made changelog sections collapsible for improved navigation
+> - Changed release-it config: push is now false, hooks commented out
+> - Enhanced CHANGELOG.md with collapsible sections and clearer type titles
+
+> This improves the clarity and usability of generated changelogs.
+
 ## [0.3.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.0...${npm.name}@0.3.1) (2025-11-09)
 
 ### Fixes:

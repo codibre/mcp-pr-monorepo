@@ -4,11 +4,20 @@ import * as tools from './tools';
 import { fluentObject } from '@codibre/fluent-iterable';
 import { McpPRCommandOptions } from './mcp-pr-command-options';
 
+/**
+ * Starts the MCP PR Command server with the provided options.
+ *
+ * This function initializes the MCP server, configures the context with the given options,
+ * sets up card link and PR link inference patterns, registers all available tools, and
+ * connects the server to the standard I/O transport. If the server fails to start, the process exits with an error.
+ *
+ * @param options - Optional configuration for the MCP PR Command server, including card link website,
+ *   card path link pattern, language, and other behavioral settings. See {@link McpPRCommandOptions} for details.
+ */
 export function startServer(options?: McpPRCommandOptions) {
 	if (options) {
 		const { cardLinkWebSite, cartPathLinkReplacePattern } = options;
-		context.cardLinkInferPattern = options.cardLinkInferPattern;
-		context.language = options.language;
+		Object.assign(context, options);
 		if (cardLinkWebSite) {
 			context.cardLinkWebSitePattern = new RegExp(
 				`/${cardLinkWebSite}\/[^\s)]+/g`,
@@ -24,9 +33,15 @@ export function startServer(options?: McpPRCommandOptions) {
 			}
 		}
 	}
+	let title =
+		'MCP used for Pull Request opening and updating, and commit messages rewriting';
+	if (options?.complementaryMcpDescription) {
+		title += ` - ${options.complementaryMcpDescription}`;
+	}
 	const server = new McpServer({
 		name: 'mcp-pr-command',
 		version: packageInfo.version ?? '0.0.0',
+		title,
 	});
 
 	fluentObject(tools)

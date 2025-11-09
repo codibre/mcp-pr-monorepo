@@ -75,7 +75,7 @@ Commits must have good description for changelogs generation and for other tools
 				content: [
 					{
 						type: 'text',
-						text: `Operação não permitida: a branch '${current}' é uma branch protegida do schema. Apenas branches de feature/fix podem ter o histórico alterado. Branches protegidas: ${protectedList}`,
+						text: `Operation not allowed: branch '${current}' is a protected schema branch. Only feature/fix branches can have their history altered. Protected branches: ${protectedList}`,
 					},
 				],
 				structuredContent: { error: 'protected_branch', replaced: 0 },
@@ -265,7 +265,7 @@ fi
 				content: [
 					{
 						type: 'text',
-						text: `Failed while rewriting commits: ${msg}. Backup disponível em tag: ${backupTag}`,
+						text: `Failed while rewriting commits: ${msg}. Backup available at tag: ${backupTag}`,
 					},
 				],
 				structuredContent: { error: msg, replaced: 0, backupTag },
@@ -294,7 +294,7 @@ fi
 				content: [
 					{
 						type: 'text',
-						text: `Failed to update branch or push changes: ${msg}. Backup disponível em tag: ${backupTag}`,
+						text: `Failed to update branch or push changes: ${msg}. Backup available at tag: ${backupTag}`,
 					},
 				],
 				structuredContent: { error: msg, replaced: 0, backupTag },

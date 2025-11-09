@@ -85,23 +85,6 @@ npm i -g mcp-pr-command
 
 After installation, you need to configure it in VS Code (see next section).
 
-### Example: infer card/pr links
-
-The MCP server supports runtime inference of card and PR links by passing a JSON options object. Example:
-
-```bash
-mcp-pr-command --mcp-options '{"cardLinkInferPattern":"[\w\-]+/(\d+)/(\d+)", "cardLinkWebSite":"https://link.com","cartPathLinkReplacePattern":"$1/card/$2/details"}'
-```
-
-In the example above the server will use the provided regular pattern to extract card identifiers from text and map them into the `prLinkInferPattern` template.
-
-You can also inform a config option file like this:
-
-
-```bash
-mcp-pr-command --mcp-options-file mcp-pr-command-options.json
-```
-
 ## How to configure it in VS Code for Copilot
 
 The simplest way to register an MCP server is using the MCP extension command inside VS Code:
@@ -128,4 +111,49 @@ The simplest way to register an MCP server is using the MCP extension command in
 4. Confirm and save.
 
 > This will register the MCP server and allow Copilot to use these tools to generate PR descriptions and rewrite commits!
-> Remember you can add --mcp-options or --mcp-options-file to the call so you can customize card link inferring from branch
+> Remember you can add --mcp-options or --mcp-options-file to the call so you can customize card link inferring from branch.
+
+## Examples
+
+### Infer card/pr links
+
+The MCP server supports runtime inference of card and PR links by passing a JSON options object. Example:
+
+```bash
+mcp-pr-command --mcp-options '{"branchCardIdExtractPattern":"[\w\-]+/(\d+)/(\d+)", "cardLinkWebSite":"https://link.com","cartPathLinkReplacePattern":"$1/card/$2/details"}'
+```
+
+In the example above the server will use the provided regular pattern to extract card identifiers from text and map them into the `prLinkInferPattern` template.
+
+You can also inform a config option file like this:
+
+
+```bash
+mcp-pr-command --mcp-options-file mcp-pr-command-options.json
+```
+
+### Node.js usage (programmatic)
+
+You can also use this library directly from Node.js, which is ideal for organizations that want to set up their own CLI wrapper or enforce specific options programmatically. This allows you to start the MCP PR Command server with custom options, without relying on CLI arguments or config files.
+
+```js
+// my-mcp-server.js
+#!/usr/bin/env node
+const { startServer } = require('mcp-pr-command');
+
+startServer({
+   cardLinkWebSite: 'https://link.com',
+   cartPathLinkReplacePattern: '$1/card/$2/details',
+   branchCardIdExtractPattern: '[\\w\\-]+/(\\d+)/(\\d+)',
+   complementaryMcpDescription: 'Custom org PR workflow',
+   // ...any other options from McpPRCommandOptions
+});
+```
+
+You can then run your server with:
+
+```bash
+node my-mcp-server.js
+```
+
+This approach is recommended for organizations with well-established parameters or custom workflows. You can fully control the server's configuration in code, integrate with other systems, or wrap it in your own CLI.

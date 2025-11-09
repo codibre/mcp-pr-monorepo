@@ -26,7 +26,7 @@ export function inferCardLinkFromBranch(
 ): string | undefined {
 	if (
 		!branch ||
-		!context.cardLinkInferPattern ||
+		!context.branchCardIdExtractPattern ||
 		!context.prLinkInferPattern ||
 		typeof branch !== 'string'
 	) {
@@ -35,7 +35,7 @@ export function inferCardLinkFromBranch(
 	if (isValidISODateString(branch)) return undefined;
 	// Convert branch using patterns
 	const link = branch.replace(
-		context.cardLinkInferPattern,
+		context.branchCardIdExtractPattern,
 		context.prLinkInferPattern,
 	);
 	if (!link || link === branch) return undefined;

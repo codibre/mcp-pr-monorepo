@@ -46,6 +46,11 @@ function detectRepoUrl() {
   return null;
 }
 
+const typeMap = {
+  feat: 'Features:',
+  fix: 'Fixes:',
+}
+
 const repoUrl = detectRepoUrl();
 if (repoUrl && commitTemplate.indexOf('/commit/{{hash}}') !== -1) {
   // replace any hardcoded commit host path with the detected repo URL
@@ -70,9 +75,9 @@ module.exports = {
   },
   npm: { publish: false, skipChecks: true },
   github: { release: false },
-  hooks: {
-    'after:bump': 'pnpm publish --no-git-checks'
-  },
+  // hooks: {
+  //   'after:bump': 'pnpm publish --no-git-checks'
+  // },
   plugins: {
     '@release-it/conventional-changelog': {
       preset: {
@@ -95,6 +100,11 @@ module.exports = {
         commitPartial: commitTemplate,
         transform: function (commit, context) {
           const out = Object.assign({}, commit);
+
+          // Map commit type to section title
+          const typeTitle = typeMap[out.type];
+          if (typeTitle) out.type = typeTitle;
+
           if (out.hash && typeof out.hash === 'string') out.hash = out.hash.substring(0, 7);
           // If hash wasn't provided separately, try to extract it from the end of the body
           if ((!out.hash || out.hash.length === 0) && out.body && typeof out.body === 'string') {
@@ -111,6 +121,9 @@ module.exports = {
           }
           return out;
         },
+        groupBy: 'type',
+        commitGroupsSort: 'title',
+        commitsSort: ['scope', 'subject'],
       },
       skipOnEmpty: true,
     },

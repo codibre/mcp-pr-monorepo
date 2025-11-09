@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.2...mcp-pr-command@0.3.3) (2025-11-09)
+### Fixes:
+
+<details>
+<summary>right commit.hbs usage</summary>
+
+
+> .releaase-it.base.js wasn't reading commit.hbs from
+> the correct folder. Fixed it.
+
+
+
+[View commit `4ed053a`](https://github.com/codibre/mcp-pr-monorepo/commit/4ed053a)
+
+
+</details>
 
 ## [0.3.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.1...mcp-pr-command@0.3.2) (2025-11-09)
 

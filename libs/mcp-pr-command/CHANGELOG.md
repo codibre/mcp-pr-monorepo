@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.0...${npm.name}@0.3.1) (2025-11-09)
+
+### fix
+
+#### improving changelog generation
+
+> Creating collapsable sections and fixing
+> type titles for better layout
+
 ## [0.3.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.1...${npm.name}@0.3.0) (2025-11-09)
 
 ### Features:

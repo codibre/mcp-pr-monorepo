@@ -1,7 +1,16 @@
-#### {{#if scope}}**{{scope}}:** {{/if}}{{subject}} {{#if hash}}([`{{hash}}`](__REPO_URL__/commit/{{hash}})){{/if}}
+<details>
+<summary>{{#if scope}}**{{scope}}:** {{/if}}{{subject}}</summary>
 
 {{#if body}}
 
 {{{body}}}
 
 {{/if}}
+
+{{#if hash}}
+
+[View commit `{{hash}}`](__REPO_URL__/commit/{{hash}})
+
+{{/if}}
+
+</details>

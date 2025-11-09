@@ -78,8 +78,8 @@ module.exports = {
       preset: {
         name: 'conventionalcommits',
         types: [
-          { type: 'feat', section: 'Features' },
-          { type: 'fix', section: 'Bug Fixes' },
+          { type: 'feat', section: 'Features:' },
+          { type: 'fix', section: 'Fixes:' },
         ],
       },
       infile: 'CHANGELOG.md',
@@ -110,17 +110,6 @@ module.exports = {
             out.body = out.body.replace(/\r\n/g, '\n').split('\n').map(l => l.trim() ? ('> ' + l) : '').join('\n').trim();
           }
           return out;
-        },
-        // Map group titles (commit types) to friendly section headers
-        groupTitle: function (group) {
-          const map = {
-            feat: 'Features:',
-            fix: 'Bug Fixes:',
-          };
-          if (group && group.title) {
-            return map[group.title] || (group.title.charAt(0).toUpperCase() + group.title.slice(1) + ':');
-          }
-          return '';
         },
       },
       skipOnEmpty: true,

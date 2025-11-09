@@ -2,9 +2,10 @@
 
 ## [0.3.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.1...${npm.name}@0.3.0) (2025-11-09)
 
-### feat
+### Features:
 
-#### allow company customization, improve card link extraction, and refactor options
+<details>
+<summary>allow company customization, improve card link extraction, and refactor options</summary>
 
 > - Refactor `cardLinkInferPattern` to `branchCardIdExtractPattern` throughout the codebase
 > - Enable advanced customization via options and config file
@@ -13,86 +14,122 @@
 > - Adjust messages and instructions for internationalization and clarity
 > - Fix minor bugs and inconsistencies in internal utilities
 
+</details>
+
 ## [0.2.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.2.0...${npm.name}@0.2.1) (2025-11-08)
 
-### fix
+### Fixes:
 
-#### fixing docs
+<details>
+<summary>fixing docs</summary>
 
 > Docs refered to this lib as a cli, but it's actually
 > a MCP server
+
+</details>
 
 ## [0.2.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.6...${npm.name}@0.2.0) (2025-11-08)
 
 ### docs
 
-#### adding demonstration video
+<details>
+<summary>adding demonstration video</summary>
 
-#### fixing vídeo link
+</details>
+
+<details>
+<summary>fixing vídeo link</summary>
+
+</details>
 
 
-### feat
+### Features:
 
-#### add PR template, global language option, keywords, and unify PR prompt logic
+<details>
+<summary>add PR template, global language option, keywords, and unify PR prompt logic</summary>
 
 > - Introduce a standardized pull request template to guide contributors and improve PR clarity and review quality.
 > - Enable users to define a default language for PR-related operations, enhancing internationalization and user experience.
 > - Update package.json with additional keywords to boost searchability and documentation visibility. No impact on runtime or functionality.
 > - Refactor PR workflow to always use buildCopilotPrompt, ensuring consistent instructions for PR titles and descriptions.
 
+</details>
+
 ## [0.1.6](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.5...${npm.name}@0.1.6) (2025-11-08)
 
-### fix
+### Fixes:
 
-#### beterring logo
+<details>
+<summary>beterring logo</summary>
 
 > Making it transparent and better sized
+
+</details>
 
 ## [0.1.5](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.4...${npm.name}@0.1.5) (2025-11-08)
 
 ### docs
 
-#### bettering doc
+<details>
+<summary>bettering doc</summary>
+
+</details>
 
 
-### fix
+### Fixes:
 
-#### adding missing lib
+<details>
+<summary>adding missing lib</summary>
+
+</details>
 
 ## [0.1.4](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.3...${npm.name}@0.1.4) (2025-11-08)
 
-### fix
+### Fixes:
 
-#### fixing command on unix
+<details>
+<summary>fixing command on unix</summary>
 
 > Adding '#node' to command so it'll be executable on unix
 
+</details>
+
 ## [0.1.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.2...${npm.name}@0.1.3) (2025-11-08)
 
-### fix
+### Fixes:
 
-#### fixing logo
+<details>
+<summary>fixing logo</summary>
+
+</details>
 
 ## [0.1.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.1...${npm.name}@0.1.2) (2025-11-08)
 
-### fix
+### Fixes:
 
-#### fixing changelog generation
+<details>
+<summary>fixing changelog generation</summary>
 
 > Changelog generation wasn't correctly creating
 > link references. Fixing it
 
+</details>
+
 ## [0.1.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.1.0...mcp-pr-command@0.1.1) (2025-11-08)
 
-### fix
+### Fixes:
 
-#### removing hardcoded link refs
+<details>
+<summary>removing hardcoded link refs</summary>
+
+</details>
 
 ## 0.1.0 (2025-11-08)
 
 ### Features:
 
-#### initial commit - add CLI, core tools and project scaffold
+<details>
+<summary>initial commit - add CLI, core tools and project scaffold</summary>
 
 > Initial implementation of the mcp-pr-command package and repository scaffold.
 
@@ -118,3 +155,5 @@
 
 > This commit adds the working foundation for further feature development and
 > documentation.
+
+</details>

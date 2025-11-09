@@ -158,7 +158,7 @@ After calling this tool, follow nextActions todo list rigourously`,
 		);
 		if (cardLinks.length > 0) {
 			nextActions.push(
-				'We have car links to read! Verify if there any MCP available to fetch card info. Ex: any businessmap specialized MCP. Do not proceed before doing it',
+				'We have car links to read! Verify if there any MCP available to fetch card info. Ex: any card app/website specialized MCP. Do not proceed before doing it',
 			);
 			nextActions.push(
 				'fetch cards info using MCP for context before doing anything else',

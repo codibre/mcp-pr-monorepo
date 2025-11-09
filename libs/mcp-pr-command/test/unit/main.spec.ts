@@ -1,4 +1,8 @@
-import type { InternalOptions } from '../../src/internal';
+import {
+	DEFAULT_BRANCH_MAPPING,
+	DEFAULT_BRANCH_SCHEMA,
+	type InternalOptions,
+} from '../../src/internal/internal-options';
 
 const McpServerMock = jest.fn().mockImplementation((opts) => ({
 	connect: jest.fn().mockResolvedValue(undefined),
@@ -8,6 +12,8 @@ const context: InternalOptions = {
 	branchCardIdExtractPattern: undefined,
 	cardLinkWebSitePattern: undefined,
 	prLinkInferPattern: undefined,
+	branchSchema: DEFAULT_BRANCH_SCHEMA,
+	branchMapping: DEFAULT_BRANCH_MAPPING,
 };
 jest.mock('../../src/internal', () => {
 	const StdioServerTransportMock = jest.fn();

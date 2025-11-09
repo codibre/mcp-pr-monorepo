@@ -42,7 +42,7 @@ Input schema:
 IMPORTANT:
 - Check all commits messages before squashing them to make a good new commit message. For that, use get-commit-messages first.
 - If repo uses commitlint, ensure that the new commit message complies with the rules to avoid push rejections. Check commitlint.config.js or .commitlintrc.js for the rules used in the repository.
-- Discourage squashing in special branches like main, staging, production, develop, etc. Check branches.ini if available for special branch names.
+- Discourage squashing in special branches like main, staging, production, develop, etc.
 - The commit message should be descriptive enough for changelogs generation and for other tools that may use it.
 - The type of the commit message (feat, fix, chore, etc.)
   - Should be feat if there's at least one feat commit.

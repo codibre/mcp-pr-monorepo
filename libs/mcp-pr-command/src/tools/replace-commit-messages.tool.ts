@@ -41,7 +41,7 @@ Input schema:
 IMPORTANT:
 If repo uses commitlint, ensure that new commit messages comply with the rules to avoid push rejections. Check commitlint.config.js or .commitlintrc.js for the rules used in the repository.
 Discourage refactoring changes in branches with names starting with release, as they may have commits merged into staging branch.
-Discourage refactoring changes in special branches, like main, staging, production, develop, etc. Check branches.ini if available for special branch names.
+Discourage refactoring changes in special branches, like main, staging, production, develop, etc.
 Commits must have good description for changelogs generation and for other tools that may use them.
 `,
 				inputSchema,

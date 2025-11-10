@@ -44,7 +44,8 @@
 
 ### Fixes:
 
-#### improve changelog section headers and layout
+<details>
+<summary>improve changelog section headers and layout</summary>
 
 > - Added typeMap to map commit types to section titles (e.g., 'fix' to 'Fixes:')
 > - Updated changelog grouping and sorting for better readability
@@ -53,6 +54,7 @@
 > - Enhanced CHANGELOG.md with collapsible sections and clearer type titles
 
 > This improves the clarity and usability of generated changelogs.
+</details>
 
 ## [0.3.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.0...mcp-pr-command@0.3.1) (2025-11-09)
 

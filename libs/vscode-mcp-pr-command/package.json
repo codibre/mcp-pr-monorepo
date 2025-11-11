@@ -1,0 +1,86 @@
+{
+  "name": "vscode-mcp-pr-command",
+  "displayName": "VS Code MCP PR Command",
+  "description": "VS Code extension to install and run mcp-pr-command easily (registers a command to start the MCP server).",
+  "version": "0.0.1",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-mcp-pr-command.registerServer",
+        "title": "Register MCP PR Command Server"
+      }
+    ],
+    "configuration": {
+      "title": "MCP PR Command",
+      "properties": {
+        "mcpPrCommand.autoStart": {
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically start the MCP server when VS Code starts."
+            },
+        "mcpPrCommand.cardLinkWebSite": {
+          "type": "string",
+          "description": "Base website used to generate card links (e.g. https://link.com)"
+        },
+        "mcpPrCommand.cartPathLinkReplacePattern": {
+          "type": "string",
+          "description": "Pattern used to build card paths (e.g. $1/card/$2/details)"
+        },
+        "mcpPrCommand.branchCardIdExtractPattern": {
+          "type": "string",
+          "description": "Regex pattern used to extract card ids from branch names"
+        },
+        "mcpPrCommand.complementaryMcpDescription": {
+          "type": "string",
+          "description": "Optional description appended to the MCP introduction"
+        }
+        ,
+        "mcpPrCommand.registrationCommand": {
+          "type": "string",
+          "description": "Optional VS Code command to call to register this MCP server with a host extension (e.g. 'mcp.registerServer'). If set, the extension will call this command with a payload describing the server."
+        },
+        "mcpPrCommand.registrationPayload": {
+          "type": "string",
+          "description": "Optional JSON payload to pass to the registration command. If omitted the extension will pass a default descriptor with name/command/args.",
+          "default": ""
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npx vsce package",
+    "build": "nest build",
+    "test": "jest --runInBand",
+    "test:scope": "jest --runInBand --scope",
+    "test:cov": "jest --runInBand --coverage",
+    "test:unit": "NODE_ENV=test jest --runInBand --forceExit",
+    "lint": "pnpm run lint:format && pnpm run lint:style",
+    "lint:fix": "pnpm run lint:format:fix && pnpm run lint:style:fix",
+    "lint:format": "prettier --check '**/{src,test}/**/*.ts'",
+    "lint:format:fix": "prettier --write '**/{src,test}/**/*.ts'",
+    "lint:style": "eslint",
+    "lint:style:fix": "eslint --fix",
+    "lint:staged": "lint-staged",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "mcp-pr-command": "workspace:*"
+  }
+  ,
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "@types/node": "^20.5.0",
+    "@types/vscode": "^1.76.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "cardLinkWebSite": "https://link.com",
+  "cartPathLinkReplacePattern": "$1/card/$2/details",
+  "branchCardIdExtractPattern": "[\\w\\-]+/(\\d+)/(\\d+)",
+  "complementaryMcpDescription": "Custom org PR workflow"
+}

@@ -8,6 +8,7 @@ import {
 } from '../internal';
 import { attempt } from '../internal/attempt';
 import { getErrorMessage } from '../internal/get-error-message';
+import { branchExistsLocally } from '../internal/git-utils';
 import { Nullable } from 'is-this-a-pigeon';
 import { McpServer, ToolCallback } from '../internal';
 
@@ -93,26 +94,44 @@ Usage example:
 				],
 			};
 		}
-		try {
+
+		// Check if the branch exists locally and push if it does
+		// Push using refspec syntax (works regardless of current branch and uncommitted changes)
+		if (branchExistsLocally(currentBranch, cwd)) {
 			try {
-				execSync(`git push origin ${currentBranch}`, { encoding: 'utf8', cwd });
-			} catch {
-				execSync(`git push --set-upstream origin ${currentBranch}`, {
-					encoding: 'utf8',
-					cwd,
-				});
+				try {
+					execSync(
+						`git push origin refs/heads/${currentBranch}:refs/heads/${currentBranch}`,
+						{ encoding: 'utf8', cwd },
+					);
+				} catch {
+					execSync(
+						`git push --set-upstream origin refs/heads/${currentBranch}:refs/heads/${currentBranch}`,
+						{
+							encoding: 'utf8',
+							cwd,
+						},
+					);
+				}
+			} catch (e) {
+				const pushError = getErrorMessage(e);
+				throw new Error(
+					`Failed to push branch '${currentBranch}' to origin.
+
+Error: ${pushError}
+
+Please check:
+1. You have write permissions to the remote repository
+2. The remote 'origin' is correctly configured (run: git remote -v)
+3. There are no conflicts with the remote branch
+4. Your network connection is stable
+
+If the branch is protected, you may need to:
+- Push directly if you have the required permissions
+- Create the PR from an existing remote branch
+- Contact a repository administrator for access`,
+				);
 			}
-		} catch (e) {
-			const pushError = getErrorMessage(e);
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Failed to push branch '${currentBranch}' to origin: ${pushError}`,
-					},
-				],
-				structuredContent: { prUrl: null },
-			};
 		}
 		let prUrl: string | null = null;
 		const prBodyFile = await createTempFile(

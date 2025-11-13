@@ -6,6 +6,7 @@ import {
 	createBackupTag,
 	getBranchSchema,
 	isProtectedBranch,
+	normalizePath,
 	ToolRegister,
 } from '../internal';
 import { attempt } from '../internal/attempt';
@@ -64,7 +65,8 @@ IMPORTANT:
 		target: string;
 		commit: string;
 	}) {
-		const { cwd, current, target, commit: newMessage } = params;
+		const { current, target, commit: newMessage } = params;
+		const cwd = normalizePath(params.cwd);
 		if (!cwd || !current || !target || !newMessage) {
 			return {
 				content: [

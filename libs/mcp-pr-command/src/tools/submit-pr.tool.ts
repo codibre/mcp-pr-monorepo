@@ -1,6 +1,11 @@
 import z from 'zod';
 import { execSync } from 'child_process';
-import { createTempFile, clearTempDir, ToolRegister } from '../internal';
+import {
+	clearTempDir,
+	createTempFile,
+	normalizePath,
+	ToolRegister,
+} from '../internal';
 import { attempt } from '../internal/attempt';
 import { getErrorMessage } from '../internal/get-error-message';
 import { Nullable } from 'is-this-a-pigeon';
@@ -75,9 +80,9 @@ Usage example:
 			body,
 			targetBranch,
 			currentBranch,
-			cwd,
 			deleteTempDir = true,
 		} = params;
+		const cwd = normalizePath(params.cwd);
 		if (!title || !body || !targetBranch || !currentBranch) {
 			return {
 				content: [

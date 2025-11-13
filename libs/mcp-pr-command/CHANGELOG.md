@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.5.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.4.0...mcp-pr-command@0.5.0) (2025-11-13)
+### chore
+
+<details>
+<summary>fixing changelog [skip ci]</summary>
+
+
+
+[View commit `42d3f54`](https://github.com/codibre/mcp-pr-monorepo/commit/42d3f54)
+
+
+</details>
+
+### Features:
+
+<details>
+<summary>**mcp-pr:** make submit-pr independent from working tree and current branch</summary>
+
+
+> - Use refspec push syntax to push a branch without checking out
+> - Skip push if the branch is remote-only
+> - Export branch helpers (branchExists, branchExistsLocally) from git-utils and reuse them
+> - Resolve arbitrary branch refs when generating diffs/commits
+> - Improve push error message with actionable steps for the user
+
+> Tests: ran unit tests for `mcp-pr-command` and they passed.
+
+
+
+[View commit `ed348a5`](https://github.com/codibre/mcp-pr-monorepo/commit/ed348a5)
+
+
+</details>
+
+### Fixes:
+
+<details>
+<summary>**wsl:** normalize paths between Windows and WSL for MCP tools</summary>
+
+
+> - Add src/internal/path-utils.ts: detect WSL and convert windows<->wsl paths
+> - Normalize incoming 'cwd' in all tools to environment-appropriate format
+> - Export normalizePath from internal index
+> - Add unit tests for path-utils and integrate into test suite
+> - Ensure build, lint, and tests pass
+
+
+
+[View commit `798bcb4`](https://github.com/codibre/mcp-pr-monorepo/commit/798bcb4)
+
+
+</details>
+
 ## [0.4.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.3.3...mcp-pr-command@0.4.0) (2025-11-09)
 ### Features:
 

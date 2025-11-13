@@ -26,6 +26,68 @@ export function createBackupTag(branchName: string, cwd: string) {
 	}
 }
 
+// Helper to check if a branch exists (local or remote)
+export function branchExists(branch: string, cwd: string): boolean {
+	try {
+		// Try local branch first
+		execSync(`git show-ref --verify --quiet refs/heads/${branch}`, {
+			encoding: 'utf8',
+			cwd,
+		});
+		return true;
+	} catch {
+		// Try remote branch
+		try {
+			const out = execSync(`git ls-remote --heads origin ${branch}`, {
+				encoding: 'utf8',
+				cwd,
+			}).trim();
+			return !!out;
+		} catch {
+			return false;
+		}
+	}
+}
+
+// Helper to check if a branch exists locally only
+export function branchExistsLocally(branch: string, cwd: string): boolean {
+	try {
+		execSync(`git show-ref --verify --quiet refs/heads/${branch}`, {
+			encoding: 'utf8',
+			cwd,
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+// Helper to resolve a branch to its actual git ref (tries local, then remote)
+function resolveBranchRef(branch: string, cwd: string): string | null {
+	// Check if ref exists directly
+	function refExists(ref: string): boolean {
+		try {
+			execSync(`git rev-parse --verify --quiet ${ref}`, {
+				encoding: 'utf8',
+				cwd,
+			});
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	// Try local branch first, then remote
+	const candidates = [branch, `origin/${branch}`];
+	for (const candidate of candidates) {
+		if (refExists(candidate)) {
+			return candidate;
+		}
+	}
+
+	return null;
+}
+
 export const clearTempDir = (cwd: string) =>
 	attempt(() => fs.promises.rmdir(path.join(cwd, '.tmp'), { recursive: true }));
 
@@ -34,8 +96,37 @@ export async function generateChangesFile(
 	currentBranch: string,
 	cwd: string,
 ) {
+	// Validate branches exist before running git commands
+	if (!branchExists(currentBranch, cwd)) {
+		throw new Error(
+			`Branch '${currentBranch}' does not exist in this repository. Please provide an existing branch name.`,
+		);
+	}
+
+	if (!branchExists(targetBranch, cwd)) {
+		throw new Error(
+			`Branch '${targetBranch}' does not exist in this repository. Please provide an existing branch name.`,
+		);
+	}
+
+	// Resolve branches to actual git refs (works with arbitrary branches, not just current)
+	const targetRef = resolveBranchRef(targetBranch, cwd);
+	const currentRef = resolveBranchRef(currentBranch, cwd);
+
+	if (!targetRef) {
+		throw new Error(
+			`Unable to resolve branch '${targetBranch}' to a valid git ref.`,
+		);
+	}
+
+	if (!currentRef) {
+		throw new Error(
+			`Unable to resolve branch '${currentBranch}' to a valid git ref.`,
+		);
+	}
+
 	const commits = execSync(
-		`git log origin/${targetBranch}..${currentBranch} --pretty=format:%B%n---ENDCOMMIT---`,
+		`git log ${targetRef}..${currentRef} --pretty=format:%B%n---ENDCOMMIT---`,
 		{ encoding: 'utf8', cwd },
 	).trim();
 	const commitEntries = commits
@@ -44,13 +135,13 @@ export async function generateChangesFile(
 		.filter(Boolean);
 	const commitsTruncated = commitEntries.join('\n\n---\n\n');
 	const diffSummary =
-		execSync(`git diff origin/${targetBranch}...${currentBranch} --stat`, {
+		execSync(`git diff ${targetRef}...${currentRef} --stat`, {
 			encoding: 'utf8',
 			cwd,
 		}).trim() || 'No diff available';
 	let codeDiff = '';
 	try {
-		codeDiff = execSync(`git diff origin/${targetBranch}...${currentBranch}`, {
+		codeDiff = execSync(`git diff ${targetRef}...${currentRef}`, {
 			encoding: 'utf8',
 			cwd,
 		}).trim();

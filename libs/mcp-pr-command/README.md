@@ -113,6 +113,32 @@ The simplest way to register an MCP server is using the MCP extension command in
 > This will register the MCP server and allow Copilot to use these tools to generate PR descriptions and rewrite commits!
 > Remember you can add --mcp-options or --mcp-options-file to the call so you can customize card link inferring from branch.
 
+## WSL / Windows path compatibility
+
+When the MCP server runs inside WSL but the user workspace is a Windows path (or vice-versa), path strings can be in different formats (for example `C:\Users\...` vs `/mnt/c/Users/...`). To avoid mismatches and broken git commands, this package now normalizes incoming `cwd` values passed to tools so they match the environment where the MCP server is running.
+
+What changed:
+
+- Added `src/internal/path-utils.ts` which detects whether the server is running in WSL and converts Windows paths to WSL paths (and back) when needed.
+- All tools that accept a `cwd` parameter now run it through `normalizePath(cwd)` before using it.
+
+Quick notes for users:
+
+- If you run the MCP server inside WSL but register it from the Windows-side VS Code, you can keep the server command as shown above (for example `wsl zsh -i -c "mcp-pr-command"`). The server will normalize repo paths passed from the client.
+- If you prefer explicit configuration, you can set an environment variable when registering the MCP server in VS Code. Example entry in your `mcp.json` or server registration:
+
+```json
+{
+   "command": "mcp-pr-command",
+   "env": {
+      "WORKSPACE_ROOT": "${workspaceFolder}"
+   }
+}
+```
+
+This package will use the normalized `cwd` passed by the client when available, but the automatic normalization ensures the server behaves correctly across Windows and WSL environments.
+
+
 ## Examples
 
 ### Infer card/pr links

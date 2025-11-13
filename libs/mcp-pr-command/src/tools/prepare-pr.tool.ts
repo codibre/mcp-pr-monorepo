@@ -7,6 +7,7 @@ import {
 	context,
 	createTempFile,
 	generateChangesFile,
+	normalizePath,
 	ToolRegister,
 } from '../internal';
 import { inferCardLinkFromBranch } from '../internal/card-link-utils';
@@ -74,7 +75,8 @@ After calling this tool, follow nextActions todo list rigourously`,
 		currentBranch: string;
 		cardLink?: string;
 	}) {
-		const { targetBranch, currentBranch, cardLink = '', cwd } = params;
+		const { targetBranch, currentBranch, cardLink = '' } = params;
+		const cwd = normalizePath(params.cwd);
 		if (!targetBranch || !currentBranch) {
 			return {
 				content: [

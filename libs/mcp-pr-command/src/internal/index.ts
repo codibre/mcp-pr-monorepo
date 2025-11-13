@@ -9,4 +9,5 @@ export * from './internal-options';
 export * from './log';
 export * from './mcp';
 export * from './package-info';
+export * from './path-utils';
 export * from './tool-register';

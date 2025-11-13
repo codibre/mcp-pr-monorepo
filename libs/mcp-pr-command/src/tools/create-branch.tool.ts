@@ -1,4 +1,4 @@
-import { context, McpServer, ToolCallback } from '../internal';
+import { context, McpServer, ToolCallback, normalizePath } from '../internal';
 import { getBranchSchema, ToolRegister } from 'src/internal';
 import { execSync } from 'child_process';
 import z from 'zod';
@@ -69,7 +69,8 @@ IMPORTANT: If user requests to open a PR, don't use this tool, as he's already p
 		baseBranch?: string;
 		cwd: string;
 	}) {
-		const { type, suffix, baseBranch, cwd } = params;
+		const { type, suffix, baseBranch } = params;
+		const cwd = normalizePath(params.cwd);
 		const schema = getBranchSchema(cwd);
 
 		// Determine default base branch if not provided

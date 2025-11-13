@@ -2,7 +2,7 @@ import z from 'zod';
 import { execSync } from 'child_process';
 import { attempt } from '../internal/attempt';
 import { inferCardLinkFromBranch } from '../internal/card-link-utils';
-import { ToolRegister } from 'src/internal';
+import { ToolRegister, normalizePath } from 'src/internal';
 import { McpServer, ToolCallback } from '../internal';
 
 const inputSchema = {
@@ -47,7 +47,8 @@ export class DetectBranchesTool implements ToolRegister {
 	}
 
 	async detectBranches(params: { cwd: string; targetBranch?: string }) {
-		const { cwd, targetBranch: providedTargetBranch } = params;
+		const { targetBranch: providedTargetBranch } = params;
+		const cwd = normalizePath(params.cwd);
 		let currentBranch = '';
 		let suggestedTarget = 'staging';
 		attempt(() => {

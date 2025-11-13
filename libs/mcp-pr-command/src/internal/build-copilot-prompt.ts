@@ -15,6 +15,8 @@ const commonInstructions = `
 - Explain the change made based on commit messages and diff provided
 - Title must be concise, single-line summary with no special characters.
 - Context of the problem being solved must be included
+- Follow pull request template when available
+  - If PR template has specitic instructions for each section, follow them strictly
 ## COMMIT FORMATTING INSTRUCTIONS:
 - Omit trivial commits (e.g. 'fix lint') EXCEPT merge commits that reference PRs with useful context
 - For commits referencing PRs (e.g. "Merge pull request #123"), ALWAYS preserve the PR reference in the summary

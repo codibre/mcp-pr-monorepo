@@ -6,6 +6,7 @@ import {
 	createBackupTag,
 	getBranchSchema,
 	isProtectedBranch,
+	normalizePath,
 	ToolRegister,
 } from '../internal';
 import { attempt } from '../internal/attempt';
@@ -56,7 +57,8 @@ Commits must have good description for changelogs generation and for other tools
 		target: string;
 		commits: string[];
 	}) {
-		const { cwd, current, target, commits: newMessages } = params;
+		const { current, target, commits: newMessages } = params;
+		const cwd = normalizePath(params.cwd);
 		if (!cwd || !current || !target || !Array.isArray(newMessages)) {
 			return {
 				content: [

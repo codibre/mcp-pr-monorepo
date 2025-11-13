@@ -1,5 +1,5 @@
 import z from 'zod';
-import { generateChangesFile } from '../internal';
+import { generateChangesFile, normalizePath } from '../internal';
 import { getErrorMessage } from '../internal/get-error-message';
 import { ToolRegister } from 'src/internal';
 import { McpServer, ToolCallback } from '../internal';
@@ -48,7 +48,8 @@ The returned file contains:
 		current: string;
 		target: string;
 	}) {
-		const { cwd, current, target } = params;
+		const { current, target } = params;
+		const cwd = normalizePath(params.cwd);
 		if (!cwd || !current || !target) {
 			return {
 				content: [

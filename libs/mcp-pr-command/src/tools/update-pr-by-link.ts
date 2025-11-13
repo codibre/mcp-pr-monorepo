@@ -1,4 +1,4 @@
-import { McpServer, ToolCallback } from '../internal';
+import { McpServer, ToolCallback, normalizePath } from '../internal';
 import { getErrorMessage, ToolRegister } from 'src/internal';
 import { PreparePrTool } from './prepare-pr.tool';
 import { execSync } from 'child_process';
@@ -58,7 +58,8 @@ Usage example:
 	 * }
 	 */
 	async updatePrByLinkHandler(params: { cwd: string; prUrl: string }) {
-		const { cwd, prUrl } = params;
+		const { prUrl } = params;
+		const cwd = normalizePath(params.cwd);
 
 		// Extract PR number from URL
 		const prNumberMatch = prUrl.match(/\/pull\/(\d+)/);

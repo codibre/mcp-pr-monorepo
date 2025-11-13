@@ -2,7 +2,7 @@ import z from 'zod';
 import { execSync } from 'child_process';
 import { attempt } from '../internal/attempt';
 import { getErrorMessage } from '../internal/get-error-message';
-import { ToolRegister } from 'src/internal';
+import { normalizePath, ToolRegister } from 'src/internal';
 import { McpServer, ToolCallback } from '../internal';
 
 const SLICE_POSITION = 3;
@@ -43,7 +43,8 @@ Input schema:
 		current: string;
 		target: string;
 	}) {
-		const { cwd, current, target } = params;
+		const { current, target } = params;
+		const cwd = normalizePath(params.cwd);
 		if (!cwd || !current || !target) {
 			return {
 				content: [

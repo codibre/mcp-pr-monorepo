@@ -3,6 +3,7 @@ import { execSync } from 'child_process';
 import { attempt } from '../internal/attempt';
 import { getErrorMessage } from '../internal/get-error-message';
 import { normalizePath, ToolRegister } from 'src/internal';
+import { refExists as refExistsHelper } from '../internal/git-helpers';
 import { McpServer, ToolCallback } from '../internal';
 
 const SLICE_POSITION = 3;
@@ -60,17 +61,7 @@ Input schema:
 		let gitOutput = '';
 		let lastError: unknown = null;
 		let found = false;
-		function refExists(ref: string) {
-			try {
-				execSync(`git rev-parse --verify --quiet ${ref}`, {
-					encoding: 'utf8',
-					cwd,
-				});
-				return true;
-			} catch {
-				return false;
-			}
-		}
+		const refExists = (ref: string) => refExistsHelper(ref, cwd);
 		const tryFind = () => {
 			for (const baseRef of baseCandidates) {
 				for (const headRef of headCandidates) {

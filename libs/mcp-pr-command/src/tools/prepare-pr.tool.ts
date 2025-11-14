@@ -10,6 +10,11 @@ import {
 	normalizePath,
 	ToolRegister,
 } from '../internal';
+import {
+	refExists,
+	fetchRemoteBranch,
+	createLocalBranchFromRemote,
+} from '../internal/git-helpers';
 import { inferCardLinkFromBranch } from '../internal/card-link-utils';
 import { Nullable, assertNonNullish } from 'is-this-a-pigeon';
 import { McpServer, ToolCallback } from '../internal';
@@ -127,11 +132,33 @@ After calling this tool, follow nextActions todo list rigourously`,
 				);
 			}
 		}
+
+		// Fetch remote target branch
+		fetchRemoteBranch(targetBranch, cwd);
+
+		const localRef = targetBranch;
+		const remoteRef = `origin/${targetBranch}`;
+
+		const localExists = refExists(localRef, cwd);
+		const remoteExists = refExists(remoteRef, cwd);
+
+		if (!remoteExists && !localExists) {
+			throw new Error(
+				`Target branch '${targetBranch}' not found locally or on remote. Please verify the branch name.`,
+			);
+		}
+
+		// If local branch doesn't exist but remote does, create it from remote
+		if (!localExists && remoteExists) {
+			createLocalBranchFromRemote(targetBranch, remoteRef, cwd);
+		}
+
 		const changesFile = await generateChangesFile(
 			targetBranch,
 			currentBranch,
 			cwd,
 		);
+
 		const candidateSet = new Set<string>();
 		if (cardLink) candidateSet.add(cardLink);
 		const inferred = inferCardLinkFromBranch(currentBranch);

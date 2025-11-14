@@ -3,6 +3,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { attempt } from './attempt';
 import { getErrorMessage } from '.';
+import { refExists } from './git-helpers';
 
 export async function createTempFile(
 	fileName: string,
@@ -64,23 +65,10 @@ export function branchExistsLocally(branch: string, cwd: string): boolean {
 
 // Helper to resolve a branch to its actual git ref (tries local, then remote)
 function resolveBranchRef(branch: string, cwd: string): string | null {
-	// Check if ref exists directly
-	function refExists(ref: string): boolean {
-		try {
-			execSync(`git rev-parse --verify --quiet ${ref}`, {
-				encoding: 'utf8',
-				cwd,
-			});
-			return true;
-		} catch {
-			return false;
-		}
-	}
-
 	// Try local branch first, then remote
 	const candidates = [branch, `origin/${branch}`];
 	for (const candidate of candidates) {
-		if (refExists(candidate)) {
+		if (refExists(candidate, cwd)) {
 			return candidate;
 		}
 	}

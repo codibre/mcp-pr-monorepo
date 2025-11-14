@@ -9,6 +9,7 @@ import {
 	normalizePath,
 	ToolRegister,
 } from '../internal';
+import { refExists as refExistsHelper } from '../internal/git-helpers';
 import { attempt } from '../internal/attempt';
 import { getErrorMessage } from '../internal/get-error-message';
 import { McpServer, ToolCallback } from '../internal';
@@ -91,17 +92,7 @@ IMPORTANT:
 				structuredContent: { error: 'protected_branch', squashed: false },
 			};
 		}
-		function refExists(ref: string) {
-			try {
-				execSync(`git rev-parse --verify --quiet ${ref}`, {
-					encoding: 'utf8',
-					cwd,
-				});
-				return true;
-			} catch {
-				return false;
-			}
-		}
+		const refExists = (ref: string) => refExistsHelper(ref, cwd);
 		attempt(() =>
 			execSync(`git fetch origin ${target}`, { encoding: 'utf8', cwd }),
 		);

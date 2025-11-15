@@ -1,26 +1,28 @@
 import z from 'zod';
-import { execSync } from 'child_process';
-import path from 'path';
 import fs from 'fs';
 import {
+	attempt,
 	createBackupTag,
+	cwdJoin,
 	getBranchSchema,
+	getErrorMessage,
+	Infer,
 	isProtectedBranch,
-	normalizePath,
+	McpResult,
+	McpServer,
+	gitService,
 	ToolRegister,
+	contextService,
+	LocalType,
 } from '../internal';
-import { refExists as refExistsHelper } from '../internal/git-helpers';
-import { attempt } from '../internal/attempt';
-import { getErrorMessage } from '../internal/get-error-message';
-import { McpServer, ToolCallback } from '../internal';
 
-const inputSchema: z.ZodRawShape = {
+const inputSchema = {
 	cwd: z.string().min(1),
 	current: z.string().min(1),
 	target: z.string().min(1),
 	commit: z.string().min(1),
 };
-const outputSchema: z.ZodRawShape = {
+const outputSchema = {
 	squashed: z.boolean(),
 	commitCount: z.number().optional(),
 	backupTag: z.string().optional(),
@@ -29,7 +31,8 @@ const outputSchema: z.ZodRawShape = {
 
 export class SquashCommitsTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'squash-commits',
 			{
 				title: 'Squash all commits between two branches into one',
@@ -56,19 +59,15 @@ IMPORTANT:
 				inputSchema,
 				outputSchema,
 			},
-			this.squashCommits as ToolCallback<typeof inputSchema>,
+			this.squashCommits.bind(this),
 		);
 	}
 
-	async squashCommits(params: {
-		cwd: string;
-		current: string;
-		target: string;
-		commit: string;
-	}) {
+	async squashCommits(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { current, target, commit: newMessage } = params;
-		const cwd = normalizePath(params.cwd);
-		if (!cwd || !current || !target || !newMessage) {
+		if (!current || !target || !newMessage) {
 			return {
 				content: [
 					{
@@ -79,8 +78,8 @@ IMPORTANT:
 				structuredContent: { error: 'invalid_input', squashed: false },
 			};
 		}
-		if (isProtectedBranch(current, cwd)) {
-			const schema = getBranchSchema(cwd);
+		if (isProtectedBranch(current)) {
+			const schema = getBranchSchema();
 			const protectedList = Object.values(schema).join(', ');
 			return {
 				content: [
@@ -92,28 +91,40 @@ IMPORTANT:
 				structuredContent: { error: 'protected_branch', squashed: false },
 			};
 		}
-		const refExists = (ref: string) => refExistsHelper(ref, cwd);
-		attempt(() =>
-			execSync(`git fetch origin ${target}`, { encoding: 'utf8', cwd }),
-		);
-		attempt(() =>
-			execSync(`git fetch origin ${current}`, { encoding: 'utf8', cwd }),
-		);
-		const baseCandidates = [`origin/${target}`, `${target}`];
-		const headCandidates = [`${current}`, `origin/${current}`];
+		await gitService.tryFetch(target);
+		await gitService.tryFetch(current);
+		// we'll check for refs both locally and on origin using refExists opts
+		type RefWhere = { ref: string; where: LocalType };
+		const baseCandidates: RefWhere[] = [
+			{ ref: target, where: 'local' },
+			{ ref: target, where: 'remote' },
+		];
+		const headCandidates: RefWhere[] = [
+			{ ref: current, where: 'local' },
+			{ ref: current, where: 'remote' },
+		];
 		let baseRefUsed: string | null = null;
 		let gitHashesOut = '';
 		let lastErr: unknown = null;
 		for (const baseRef of baseCandidates) {
 			for (const headRef of headCandidates) {
-				if (!refExists(baseRef) || !refExists(headRef)) continue;
-				const rangeTry = `${baseRef}..${headRef}`;
+				// normalize ref existence using opts
+				const baseExists = await gitService.refExists(baseRef.ref, {
+					where: baseRef.where,
+					remote: baseRef.where === 'remote' ? 'origin' : undefined,
+				});
+				const headExists = await gitService.refExists(headRef.ref, {
+					where: headRef.where,
+					remote: headRef.where === 'remote' ? 'origin' : undefined,
+				});
+				if (!baseExists || !headExists) continue;
 				try {
-					gitHashesOut = execSync(`git log ${rangeTry} --pretty=format:'%H'`, {
-						encoding: 'utf8',
-						cwd,
-					}).trim();
-					baseRefUsed = baseRef;
+					const baseExpr = baseRef.ref;
+					const headExpr = headRef.ref;
+					gitHashesOut = await gitService.logRange(baseExpr, headExpr, {
+						format: 'hashes',
+					});
+					baseRefUsed = baseExpr;
 					break;
 				} catch (e) {
 					lastErr = e;
@@ -144,7 +155,7 @@ IMPORTANT:
 		}
 		let backupTag;
 		try {
-			backupTag = createBackupTag(current, cwd);
+			backupTag = await createBackupTag(current);
 		} catch (e) {
 			const msg = getErrorMessage(e);
 			return {
@@ -154,21 +165,16 @@ IMPORTANT:
 		}
 		if (hashes.length === 1) {
 			try {
-				execSync(`git checkout ${current}`, { encoding: 'utf8', cwd });
-				const msgFile = path.join(cwd, `.git/SQUASH_MSG_${Date.now()}.txt`);
+				await gitService.checkoutBranch(current);
+				const msgFile = cwdJoin(`.git/SQUASH_MSG_${Date.now()}.txt`);
 				fs.writeFileSync(msgFile, newMessage, 'utf8');
 				try {
-					execSync(`git commit --amend -F "${msgFile}"`, {
-						encoding: 'utf8',
-						cwd,
-					});
+					// use unified API: commit with msgFile and amend option
+					await gitService.commit({ msgFile, amend: true });
 				} finally {
 					attempt(() => fs.unlinkSync(msgFile));
 				}
-				execSync(`git push --force origin ${current}`, {
-					encoding: 'utf8',
-					cwd,
-				});
+				await gitService.push('origin', current, { force: true });
 				return {
 					content: [
 						{
@@ -180,6 +186,14 @@ IMPORTANT:
 				};
 			} catch (e) {
 				const msg = getErrorMessage(e);
+				// Attempt to restore the branch to the backup tag (best-effort)
+				await attempt(async () => {
+					if (backupTag) {
+						// Force the branch to the backup tag and push to remote
+						await gitService.branchForceUpdate(current, backupTag);
+						await gitService.push('origin', current, { force: true });
+					}
+				});
 				return {
 					content: [
 						{
@@ -192,17 +206,17 @@ IMPORTANT:
 			}
 		}
 		try {
-			execSync(`git checkout ${current}`, { encoding: 'utf8', cwd });
+			await gitService.checkoutBranch(current);
 			const baseToUse = baseRefUsed || `${target}`;
-			execSync(`git reset --soft ${baseToUse}`, { encoding: 'utf8', cwd });
-			const msgFile = path.join(cwd, `.git/SQUASH_MSG_${Date.now()}.txt`);
+			await gitService.reset({ mode: 'soft', ref: baseToUse });
+			const msgFile = cwdJoin(`.git/SQUASH_MSG_${Date.now()}.txt`);
 			fs.writeFileSync(msgFile, newMessage, 'utf8');
 			try {
-				execSync(`git commit -F "${msgFile}"`, { encoding: 'utf8', cwd });
+				await gitService.commit({ msgFile });
 			} finally {
 				attempt(() => fs.unlinkSync(msgFile));
 			}
-			execSync(`git push --force origin ${current}`, { encoding: 'utf8', cwd });
+			await gitService.push('origin', current, { force: true });
 			return {
 				content: [
 					{
@@ -218,6 +232,13 @@ IMPORTANT:
 			};
 		} catch (e) {
 			const msg = getErrorMessage(e);
+			// Attempt to restore the branch to the backup tag (best-effort)
+			await attempt(async () => {
+				if (backupTag) {
+					await gitService.branchForceUpdate(current, backupTag);
+					await gitService.push('origin', current, { force: true });
+				}
+			});
 			return {
 				content: [
 					{

@@ -1,10 +1,15 @@
 import z from 'zod';
-import { execSync } from 'child_process';
-import { attempt } from '../internal/attempt';
-import { getErrorMessage } from '../internal/get-error-message';
-import { normalizePath, ToolRegister } from 'src/internal';
-import { refExists as refExistsHelper } from '../internal/git-helpers';
-import { McpServer, ToolCallback } from '../internal';
+import {
+	Infer,
+	ToolRegister,
+	McpServer,
+	attempt,
+	getErrorMessage,
+	gitService,
+	contextService,
+	McpResult,
+	LocalType,
+} from '../internal';
 
 const SLICE_POSITION = 3;
 
@@ -20,7 +25,8 @@ const outputSchema = {
 
 export class GetCommitMessagesTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'get-commit-messages',
 			{
 				title: 'Get commit messages between branches',
@@ -35,18 +41,15 @@ Input schema:
 				inputSchema,
 				outputSchema,
 			},
-			this.getCommitMessages as ToolCallback<typeof inputSchema>,
+			this.getCommitMessages.bind(this),
 		);
 	}
 
-	async getCommitMessages(params: {
-		cwd: string;
-		current: string;
-		target: string;
-	}) {
+	async getCommitMessages(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { current, target } = params;
-		const cwd = normalizePath(params.cwd);
-		if (!cwd || !current || !target) {
+		if (!current || !target) {
 			return {
 				content: [
 					{
@@ -56,22 +59,52 @@ Input schema:
 				],
 			};
 		}
-		const baseCandidates = [`origin/${target}`, `${target}`, 'origin/HEAD'];
-		const headCandidates = [`${current}`, `origin/${current}`];
+		type RefWhere = { ref: string; where: LocalType };
+		const baseCandidates: Array<string | RefWhere> = [
+			{ ref: target, where: 'remote' },
+			{ ref: target, where: 'local' },
+			{ ref: 'HEAD', where: 'remote' },
+		];
+		const headCandidates: RefWhere[] = [
+			{ ref: current, where: 'local' },
+			{ ref: current, where: 'remote' },
+		];
 		let gitOutput = '';
 		let lastError: unknown = null;
 		let found = false;
-		const refExists = (ref: string) => refExistsHelper(ref, cwd);
-		const tryFind = () => {
+		const tryFind = async () => {
 			for (const baseRef of baseCandidates) {
 				for (const headRef of headCandidates) {
-					if (!refExists(baseRef) || !refExists(headRef)) continue;
-					const range = `${baseRef}..${headRef}`;
+					// normalize baseRef type
+					let baseExists = false;
+					let baseExpr = '';
+					if (typeof baseRef === 'string') {
+						baseExists = await gitService.refExists(baseRef, {
+							where: 'remote',
+							remote: 'origin',
+						});
+						baseExpr = baseRef;
+					} else {
+						baseExists = await gitService.refExists(baseRef.ref, {
+							where: baseRef.where,
+							remote: baseRef.where === 'remote' ? 'origin' : undefined,
+						});
+						baseExpr = baseRef.ref;
+					}
+					const headExists = await gitService.refExists(headRef.ref, {
+						where: headRef.where,
+						remote: headRef.where === 'remote' ? 'origin' : undefined,
+					});
+					if (!baseExists || !headExists) continue;
 					try {
-						gitOutput = execSync(
-							`git log ${range} --pretty=format:'%H%n%B%n---ENDCOMMIT---'`,
-							{ encoding: 'utf8', cwd },
-						).trim();
+						// request full commit messages (subject + body)
+						gitOutput = await gitService.logRange(
+							baseExpr,
+							headRef.where === 'remote' ? headRef.ref : headRef.ref,
+							{
+								format: 'messages',
+							},
+						);
 						found = true;
 						return;
 					} catch (e) {
@@ -80,32 +113,27 @@ Input schema:
 				}
 			}
 		};
-		tryFind();
+		await tryFind();
 		if (!found) {
-			attempt(() =>
-				execSync(`git fetch origin ${target}`, { encoding: 'utf8', cwd }),
-			);
-			attempt(() =>
-				execSync(`git fetch origin ${current}`, { encoding: 'utf8', cwd }),
-			);
-			attempt(() => {
+			await gitService.tryFetch(target);
+			await gitService.tryFetch(current);
+			await attempt(async () => {
 				let originHead = null;
 				try {
-					const sym = execSync(
-						'git symbolic-ref --quiet refs/remotes/origin/HEAD',
-						{ encoding: 'utf8', cwd },
-					).trim();
+					const sym = await gitService.symbolicRefQuiet(
+						'refs/remotes/origin/HEAD',
+					);
 					const parts = sym.split('/');
 					originHead = parts.slice(SLICE_POSITION).join('/');
 				} catch {
 					originHead = null;
 				}
 				if (originHead) {
-					baseCandidates.unshift(`origin/${originHead}`);
-					baseCandidates.unshift(`${originHead}`);
+					baseCandidates.unshift({ ref: originHead, where: 'remote' });
+					baseCandidates.unshift({ ref: originHead, where: 'local' });
 				}
 			});
-			tryFind();
+			await tryFind();
 		}
 		if (!found) {
 			const msg = lastError

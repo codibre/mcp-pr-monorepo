@@ -1,16 +1,17 @@
 import z from 'zod';
-import { execSync } from 'child_process';
 import {
 	clearTempDir,
+	contextService,
 	createTempFile,
-	normalizePath,
+	getErrorMessage,
+	ghClient,
+	gitService,
+	Infer,
+	McpResult,
+	McpServer,
+	run,
 	ToolRegister,
 } from '../internal';
-import { attempt } from '../internal/attempt';
-import { getErrorMessage } from '../internal/get-error-message';
-import { branchExistsLocally } from '../internal/git-utils';
-import { Nullable } from 'is-this-a-pigeon';
-import { McpServer, ToolCallback } from '../internal';
 
 const inputSchema = {
 	cwd: z
@@ -31,7 +32,8 @@ const outputSchema = {
 
 export class SubmitPrTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'submit-pr',
 			{
 				title: 'Opening or updating PR workflow, step 3: Submit PR',
@@ -62,19 +64,13 @@ Usage example:
 				inputSchema,
 				outputSchema,
 			},
-			this.submitPr as ToolCallback<typeof inputSchema>,
+			this.submitPr.bind(this),
 		);
 	}
 
-	async submitPr(params: {
-		cwd: string;
-		prNumber?: number | null;
-		title: string;
-		body: string;
-		targetBranch: string;
-		currentBranch: string;
-		deleteTempDir?: boolean;
-	}) {
+	async submitPr(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const {
 			prNumber = null,
 			title,
@@ -83,7 +79,6 @@ Usage example:
 			currentBranch,
 			deleteTempDir = true,
 		} = params;
-		const cwd = normalizePath(params.cwd);
 		if (!title || !body || !targetBranch || !currentBranch) {
 			return {
 				content: [
@@ -97,20 +92,15 @@ Usage example:
 
 		// Check if the branch exists locally and push if it does
 		// Push using refspec syntax (works regardless of current branch and uncommitted changes)
-		if (branchExistsLocally(currentBranch, cwd)) {
+		if (await gitService.refExists(currentBranch, { where: 'local' })) {
 			try {
 				try {
-					execSync(
+					await run(
 						`git push origin refs/heads/${currentBranch}:refs/heads/${currentBranch}`,
-						{ encoding: 'utf8', cwd },
 					);
 				} catch {
-					execSync(
+					await run(
 						`git push --set-upstream origin refs/heads/${currentBranch}:refs/heads/${currentBranch}`,
-						{
-							encoding: 'utf8',
-							cwd,
-						},
 					);
 				}
 			} catch (e) {
@@ -137,31 +127,24 @@ If the branch is protected, you may need to:
 		const prBodyFile = await createTempFile(
 			`.copilot-pr-body-${prNumber}-${Date.now()}.md`,
 			body,
-			cwd,
 		);
 		if (prNumber) {
-			const prView = execSync(`gh pr view ${prNumber} --json url`, {
-				encoding: 'utf8',
-				cwd,
-			}).trim();
-			attempt(() => {
-				prUrl = (JSON.parse(prView) as Nullable<{ url: string }>)?.url ?? null;
-			});
-			execSync(
-				`gh pr edit ${prNumber} --title "${title}" --body-file "${prBodyFile}"`,
-				{ encoding: 'utf8', cwd },
-			);
+			const details = await ghClient.prView(prNumber, ['url']);
+			prUrl = details?.url ?? null;
+			await ghClient.prEdit(prNumber, title, prBodyFile);
 		} else {
-			const prCreateOut = execSync(
-				`gh pr create --base ${targetBranch} --head ${currentBranch} --title "${title}" --body-file "${prBodyFile}"`,
-				{ encoding: 'utf8', cwd },
-			);
+			const prCreateOut = await ghClient.prCreate({
+				base: targetBranch,
+				head: currentBranch,
+				title,
+				bodyFile: prBodyFile,
+			});
 			const urlMatch = prCreateOut.match(
 				/https:\/\/github\.com\/[\w-]+\/[\w-]+\/pull\/\d+/,
 			);
 			prUrl = urlMatch ? urlMatch[0] : null;
 		}
-		if (deleteTempDir) await clearTempDir(cwd);
+		if (deleteTempDir) await clearTempDir();
 		return {
 			content: [
 				{

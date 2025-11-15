@@ -1,8 +1,13 @@
 import z from 'zod';
-import { generateChangesFile, normalizePath } from '../internal';
-import { getErrorMessage } from '../internal/get-error-message';
-import { ToolRegister } from 'src/internal';
-import { McpServer, ToolCallback } from '../internal';
+import {
+	contextService,
+	generateChangesFile,
+	getErrorMessage,
+	Infer,
+	McpResult,
+	McpServer,
+	ToolRegister,
+} from '../internal';
 
 const inputSchema = {
 	cwd: z
@@ -20,7 +25,8 @@ const outputSchema = {
 
 export class GetCommitContentsTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'get-commit-contents',
 			{
 				title: 'Get commit contents file between branches',
@@ -39,18 +45,15 @@ The returned file contains:
 				inputSchema,
 				outputSchema,
 			},
-			this.getCommitContents as ToolCallback<typeof inputSchema>,
+			this.getCommitContents.bind(this),
 		);
 	}
 
-	async getCommitContents(params: {
-		cwd: string;
-		current: string;
-		target: string;
-	}) {
+	async getCommitContents(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { current, target } = params;
-		const cwd = normalizePath(params.cwd);
-		if (!cwd || !current || !target) {
+		if (!current || !target) {
 			return {
 				content: [
 					{
@@ -62,7 +65,7 @@ The returned file contains:
 			};
 		}
 		try {
-			const changesFile = await generateChangesFile(target, current, cwd);
+			const changesFile = await generateChangesFile(target, current);
 			return {
 				content: [
 					{ type: 'text', text: `Changes file generated at: ${changesFile}` },

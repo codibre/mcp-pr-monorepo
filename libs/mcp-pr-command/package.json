@@ -65,6 +65,7 @@
   },
   "dependencies": {
     "@codibre/fluent-iterable": "^1.39.2",
+    "@octokit/rest": "^19.0.7",
     "@modelcontextprotocol/sdk": "^1.20.1",
     "commander": "^14.0.2",
     "is-this-a-pigeon": "^1.2.0",

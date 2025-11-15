@@ -14,9 +14,8 @@ export async function run(cmd: string, options?: ExecOptions) {
 	};
 	// require exec dynamically so tests can mock child_process.exec
 
+	console.error(`Running command: ${cmd}`);
 	const res = await execAsync(cmd, opts);
-	const err = res.stderr?.toString().trim();
-	if (err) throw new Error(`Command error: ${err}`);
 	return res.stdout?.toString().trim() ?? '';
 }
 

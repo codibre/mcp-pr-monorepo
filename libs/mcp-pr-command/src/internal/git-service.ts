@@ -67,7 +67,15 @@ export class GitService {
 	}
 
 	async fetch(ref: string) {
-		return await git().with('fetch', 'origin').ifWith(ref, ref).run();
+		try {
+			return await git().with('fetch', 'origin').ifWith(ref, ref).run();
+		} catch (e: unknown) {
+			throw new Error(
+				`Failed to fetch remote branch 'origin/${ref}': ${getErrorMessage(
+					e,
+				)}. Please ensure your local branch is up to date`,
+			);
+		}
 	}
 
 	async tryFetch(...ref: string[]) {

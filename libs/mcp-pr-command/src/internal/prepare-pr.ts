@@ -2,10 +2,9 @@ import fs from 'fs';
 import { OmitFields, Nullable, assertNonNullish } from 'is-this-a-pigeon';
 import z from 'zod';
 import { Infer, McpResult } from './mcp';
-import { ghClient } from './gh-client';
+import { ghClient } from './gh-client-instance';
 import { cwdJoin } from './cwd';
 import { createTempFile, generateChangesFile } from './git-utils';
-import { fetchRemoteBranch } from './git-helpers';
 import { gitService } from './git-service';
 import { inferCardLinkFromBranch } from './card-link-utils';
 import { context } from './context';
@@ -72,7 +71,7 @@ export async function preparePr(
 	}
 
 	// Fetch remote target branch
-	await fetchRemoteBranch(targetBranch);
+	await gitService.fetch(targetBranch);
 
 	// Check for the branch locally or on the remote (origin)
 	const localExists = await gitService.refExists(targetBranch, {

@@ -48,5 +48,3 @@ export class GhClient {
 		);
 	}
 }
-
-export const ghClient = new GhClient();

@@ -66,4 +66,35 @@ describe('SquashCommitsTool', () => {
 		} as any);
 		expect(res.structuredContent?.squashed).toBe(true);
 	});
+
+	it('multi-commit flow resets and commits combined commit', async () => {
+		// ensure cwd is available for temp file creation
+		const cs = await import('../../../src/internal/context-service');
+		jest.spyOn(cs.contextService, 'cwd', 'get').mockReturnValue(process.cwd());
+		const barrel = await import('src/internal');
+		jest
+			.spyOn(barrel.contextService, 'cwd', 'get')
+			.mockReturnValue(process.cwd());
+		// mock run to avoid external calls
+		const runMod = await import('src/internal/run');
+		jest.spyOn(runMod, 'run').mockResolvedValue('');
+		// make logRange return two hashes
+		const git = await import('../../../src/internal/git-service');
+		jest.spyOn(git.gitService, 'logRange').mockResolvedValue('h1\nh2');
+		const fsPromises = await import('fs/promises');
+		jest.spyOn(fsPromises, 'writeFile').mockResolvedValue(undefined as any);
+		jest.spyOn(fsPromises, 'unlink').mockResolvedValue(undefined as any);
+
+		const t = new (
+			await import('../../../src/tools/squash-commits.tool')
+		).SquashCommitsTool();
+		const res = await t.squashCommits({
+			cwd: process.cwd(),
+			current: 'feat',
+			target: 'main',
+			commit: 'Combined message',
+		} as any);
+		expect(res.structuredContent?.squashed).toBe(true);
+		expect(res.structuredContent?.commitCount).toBeGreaterThanOrEqual(2);
+	});
 });

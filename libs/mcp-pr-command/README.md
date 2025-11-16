@@ -1,4 +1,5 @@
 ![mcp-pr-command-logo](https://cdn.jsdelivr.net/gh/codibre/mcp-pr-monorepo@main/libs/mcp-pr-command/resources/mcp-pr-command-logo.png)
+[![Maintainability](https://qlty.sh/gh/codibre/projects/mcp-pr-monorepo/maintainability.svg)](https://qlty.sh/gh/codibre/projects/mcp-pr-monorepo)
 
 # MCP PR Command
 

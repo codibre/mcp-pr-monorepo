@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.6.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.5.0...mcp-pr-command@0.6.0) (2025-11-16)
+### Features:
+
+<details>
+<summary>**mcp-pr-command:** use GitHub API for PR creation/update and centralize run/git utilities</summary>
+
+
+> - Implement `gh-client-api` using `@octokit/rest` and `gh-client-instance` to select between CLI/API.
+> - Centralize command execution in `run` and encapsulate Git operations in `git-service`.
+> - Introduce `ContextService` (AsyncLocalStorage) to propagate `cwd` to MCP tools.
+> - Migrate internal tools (prepare-pr, detect-branches, get-commit-*) to the new abstractions and normalize WSL/path handling.
+> - Update tests and bump `libs/mcp-pr-command` to `0.5.0`.
+
+> Rationale: enable PR creation/update via the GitHub REST API (octokit), reduce reliance on the `gh` CLI, and make PR operations independent of working-tree state.
+
+
+
+[View commit `0c88c49`](https://github.com/codibre/mcp-pr-monorepo/commit/0c88c49)
+
+
+</details>
+
+### Fixes:
+
+<details>
+<summary>**git:** centralize refExists and tidy prepare-pr fetch handling; throw clear errors</summary>
+
+
+
+[View commit `1097a82`](https://github.com/codibre/mcp-pr-monorepo/commit/1097a82)
+
+
+</details>
+
 ## [0.5.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.4.0...mcp-pr-command@0.5.0) (2025-11-13)
 ### chore
 

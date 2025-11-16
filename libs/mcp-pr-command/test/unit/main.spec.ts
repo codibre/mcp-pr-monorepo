@@ -15,18 +15,20 @@ const context: InternalOptions = {
 	branchSchema: DEFAULT_BRANCH_SCHEMA,
 	branchMapping: DEFAULT_BRANCH_MAPPING,
 };
-jest.mock('../../src/internal', () => {
-	const StdioServerTransportMock = jest.fn();
-	const log = jest.fn();
-	const packageInfo = { version: '1.2.3' };
-	return {
-		McpServer: McpServerMock,
-		StdioServerTransport: StdioServerTransportMock,
-		context,
-		log,
-		packageInfo,
-	};
-});
+// Mock concrete internal modules instead of the index to avoid readonly export issues
+jest.mock('../../src/internal/mcp', () => ({
+	McpServer: McpServerMock,
+	StdioServerTransport: jest.fn(),
+}));
+jest.mock('../../src/internal/context', () => ({
+	context,
+}));
+jest.mock('../../src/internal/log', () => ({
+	log: jest.fn(),
+}));
+jest.mock('../../src/internal/package-info', () => ({
+	packageInfo: { version: '1.2.3' },
+}));
 
 jest.mock('../../src/tools', () => {
 	class FakeTool {

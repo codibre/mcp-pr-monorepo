@@ -1,7 +1,7 @@
 import z from 'zod';
 import {
 	contextService,
-	generateChangesFile,
+	gitService,
 	getErrorMessage,
 	Infer,
 	McpResult,
@@ -58,7 +58,7 @@ The returned file contains:
 			throw new Error('Missing required parameters: cwd, current, or target');
 		}
 		try {
-			const changesFile = await generateChangesFile(target, current);
+			const changesFile = await gitService.generateChangesFile(target, current);
 			return buildTextResult<typeof outputSchema>(
 				`Changes file generated at: ${changesFile}`,
 				{ changesFile },

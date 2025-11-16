@@ -36,19 +36,19 @@ const placeholderRegex = /%(\w+)%/g;
 
 export function buildCopilotPrompt({
 	prTemplate,
-	existingPRContent,
+	prContentFile,
 	changesFile,
 }: {
 	prTemplate?: Nullable<string>;
-	existingPRContent?: Nullable<{ title: string; body: string }>;
+	prContentFile?: Nullable<string>;
 	changesFile?: string;
 } = {}): string {
 	const prompt: string[] = [];
 	if (prTemplate) prompt.push(`PR Template file: ${prTemplate}\n`);
 	prompt.push('# Opening PR Instructions:\n');
 	prompt.push(
-		existingPRContent
-			? `Read the file ${changesFile} which contains NEW commits and changes to incorporate into an EXISTING Pull Request. Existing PR content can be read from : ${existingPRContent}`
+		prContentFile
+			? `Read the file ${changesFile} which contains NEW commits and changes to incorporate into an EXISTING Pull Request. Existing PR content can be read from  file: ${prContentFile}`
 			: `Read the file ${changesFile} which contains NEW commits and changes to create a Pull Request.`,
 	);
 

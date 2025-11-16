@@ -1,3 +1,5 @@
+[![Maintainability](https://qlty.sh/gh/codibre/projects/mcp-pr-monorepo/maintainability.svg)](https://qlty.sh/gh/codibre/projects/mcp-pr-monorepo)
+[![Code Coverage](https://qlty.sh/gh/codibre/projects/mcp-pr-monorepo/coverage.svg)](https://qlty.sh/gh/codibre/projects/mcp-pr-monorepo)cd
 
 # mcp-pr-monorepo
 

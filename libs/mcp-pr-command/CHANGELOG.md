@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.6.1...mcp-pr-command@0.6.2) (2025-11-16)
+### Fixes:
+
+<details>
+<summary>fixing vulnerabilities</summary>
+
+
+> Updating libs and fixing high vulnerabilities
+
+
+
+[View commit `273bec8`](https://github.com/codibre/mcp-pr-monorepo/commit/273bec8)
+
+
+</details>
+
 ## [0.6.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.6.0...mcp-pr-command@0.6.1) (2025-11-16)
 ### Fixes:
 

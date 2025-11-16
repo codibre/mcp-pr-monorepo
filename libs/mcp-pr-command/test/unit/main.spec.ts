@@ -44,7 +44,7 @@ jest.mock('../../src/tools', () => {
 });
 
 // Import the module under test after the mocks are in place
-const { startServer } = require('../../src/main');
+import { startServer } from '../../src';
 
 describe('startServer', () => {
 	beforeEach(() => {

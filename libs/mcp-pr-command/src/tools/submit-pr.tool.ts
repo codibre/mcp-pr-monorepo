@@ -9,7 +9,6 @@ import {
 	Infer,
 	McpResult,
 	McpServer,
-	run,
 	ToolRegister,
 } from '../internal';
 import { buildTextResult } from '../internal/build-result';
@@ -90,15 +89,7 @@ Usage example:
 		// Push using refspec syntax (works regardless of current branch and uncommitted changes)
 		if (await gitService.refExists(currentBranch, { where: 'local' })) {
 			try {
-				try {
-					await run(
-						`git push origin refs/heads/${currentBranch}:refs/heads/${currentBranch}`,
-					);
-				} catch {
-					await run(
-						`git push --set-upstream origin refs/heads/${currentBranch}:refs/heads/${currentBranch}`,
-					);
-				}
+				await gitService.push('origin', currentBranch);
 			} catch (e) {
 				const pushError = getErrorMessage(e);
 				throw new Error(

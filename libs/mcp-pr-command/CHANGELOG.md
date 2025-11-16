@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.6.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.6.2...mcp-pr-command@0.6.3) (2025-11-16)
+### Fixes:
+
+<details>
+<summary>**submit-pr:** use gitService.push to push current branch</summary>
+
+
+> Replace direct run-based git push calls in `submit-pr` with `gitService.push`. This centralizes push logic, improves testability (avoids shelling out during unit tests), and provides consistent error handling/reporting for push failures.
+
+
+
+[View commit `e5dd7f6`](https://github.com/codibre/mcp-pr-monorepo/commit/e5dd7f6)
+
+
+</details>
+
+### test
+
+<details>
+<summary>**mcp-pr-command:** add unit tests to improve coverage for gh-client-api, git-service and tools</summary>
+
+
+> Add and expand Jest unit tests across `libs/mcp-pr-command`:
+> - Cover `gh-client-api` fallback paths, PR view/edit/create parsing and search fallbacks.
+> - Exercise `git-service` utilities, fallback behaviors, and edge cases.
+> - Add tests for tools (`squash-commits`, `replace-commit-messages`, `submit-pr`, `prepare-pr`, `get-commit-*`) including error paths and push/fetch scenarios.
+
+> Tests mock `run`, `@octokit/rest`, `fs`, and temp-file helpers to be hermetic; this increases coverage and reduces regression risk.
+
+
+
+[View commit `67e6174`](https://github.com/codibre/mcp-pr-monorepo/commit/67e6174)
+
+
+</details>
+
 ## [0.6.2](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.6.1...mcp-pr-command@0.6.2) (2025-11-16)
 ### Fixes:
 

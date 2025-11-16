@@ -1,10 +1,16 @@
-import { context, McpServer, ToolCallback, normalizePath } from '../internal';
+import {
+	context,
+	McpServer,
+	Infer,
+	gitService,
+	contextService,
+	McpResult,
+} from '../internal';
 import { getBranchSchema, ToolRegister } from 'src/internal';
-import { execSync } from 'child_process';
 import z from 'zod';
-import { ChangingBranchType } from 'src/mcp-pr-command-options';
+import { buildTextResult } from '../internal/build-result';
 
-const inputSchema: z.ZodRawShape = {
+const inputSchema = {
 	type: z
 		.enum(['feat', 'fix', 'hotfix', 'release'])
 		.describe('Type of branch to create: feat, fix, hotfix or release'),
@@ -25,9 +31,16 @@ const inputSchema: z.ZodRawShape = {
 		.min(1)
 		.describe('Current working directory of the repository'),
 };
+
+const outputSchema = {
+	branchName: z.string(),
+	baseBranch: z.string(),
+};
+
 export class CreateBranchTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'create-branch',
 			{
 				title: 'Create a feat/fix branch for a given card',
@@ -49,8 +62,9 @@ of this default values if questioned about it.
 IMPORTANT: If user requests to open a PR, don't use this tool, as he's already positioned in the correct branch.
 `,
 				inputSchema,
+				outputSchema,
 			},
-			this.createBranchHandler as ToolCallback<typeof inputSchema>,
+			this.createBranchHandler.bind(this),
 		);
 	}
 
@@ -63,15 +77,11 @@ IMPORTANT: If user requests to open a PR, don't use this tool, as he's already p
 	 *   prUrl: string   // Required. URL of the PR to update.
 	 * }
 	 */
-	async createBranchHandler(params: {
-		type: ChangingBranchType;
-		suffix: string;
-		baseBranch?: string;
-		cwd: string;
-	}) {
+	async createBranchHandler(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { type, suffix, baseBranch } = params;
-		const cwd = normalizePath(params.cwd);
-		const schema = getBranchSchema(cwd);
+		const schema = getBranchSchema();
 
 		// Determine default base branch if not provided
 		const defaultBase = schema[context.branchMapping[type].origin] ?? 'main';
@@ -82,24 +92,19 @@ IMPORTANT: If user requests to open a PR, don't use this tool, as he's already p
 		const branchName = `${type}/${normalizedSuffix}`;
 
 		// Fetch latest from remote
-		execSync(`git fetch origin ${branchFrom}`, { encoding: 'utf8', cwd });
+		await gitService.tryFetch(branchFrom);
 		// Create branch from base
-		execSync(`git checkout -b ${branchName} origin/${branchFrom}`, {
-			encoding: 'utf8',
-			cwd,
+		await gitService.checkoutBranch(branchName, {
+			new: true,
+			startPoint: `origin/${branchFrom}`,
 		});
 
-		return {
-			content: [
-				{
-					type: 'text',
-					text: `Branch '${branchName}' created from '${branchFrom}'.`,
-				},
-			],
-			structuredContent: {
+		return buildTextResult<typeof outputSchema>(
+			`Branch '${branchName}' created from '${branchFrom}'.`,
+			{
 				branchName,
 				baseBranch: branchFrom,
 			},
-		};
+		);
 	}
 }

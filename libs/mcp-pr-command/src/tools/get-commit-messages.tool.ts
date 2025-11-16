@@ -1,12 +1,14 @@
 import z from 'zod';
-import { execSync } from 'child_process';
-import { attempt } from '../internal/attempt';
-import { getErrorMessage } from '../internal/get-error-message';
-import { normalizePath, ToolRegister } from 'src/internal';
-import { refExists as refExistsHelper } from '../internal/git-helpers';
-import { McpServer, ToolCallback } from '../internal';
-
-const SLICE_POSITION = 3;
+import {
+	Infer,
+	ToolRegister,
+	McpServer,
+	getErrorMessage,
+	gitService,
+	contextService,
+	McpResult,
+} from '../internal';
+import { buildTextResult } from '../internal/build-result';
 
 const inputSchema = {
 	cwd: z.string().min(1),
@@ -20,7 +22,8 @@ const outputSchema = {
 
 export class GetCommitMessagesTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'get-commit-messages',
 			{
 				title: 'Get commit messages between branches',
@@ -35,97 +38,60 @@ Input schema:
 				inputSchema,
 				outputSchema,
 			},
-			this.getCommitMessages as ToolCallback<typeof inputSchema>,
+			this.getCommitMessages.bind(this),
 		);
 	}
 
-	async getCommitMessages(params: {
-		cwd: string;
-		current: string;
-		target: string;
-	}) {
+	async getCommitMessages(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { current, target } = params;
-		const cwd = normalizePath(params.cwd);
-		if (!cwd || !current || !target) {
-			return {
-				content: [
-					{
-						type: 'text',
-						text: 'Missing required parameters: cwd, current, or target',
-					},
-				],
-			};
+		if (!current || !target) {
+			throw new Error('Missing required parameters: cwd, current, or target');
 		}
-		const baseCandidates = [`origin/${target}`, `${target}`, 'origin/HEAD'];
-		const headCandidates = [`${current}`, `origin/${current}`];
 		let gitOutput = '';
 		let lastError: unknown = null;
 		let found = false;
-		const refExists = (ref: string) => refExistsHelper(ref, cwd);
-		const tryFind = () => {
-			for (const baseRef of baseCandidates) {
-				for (const headRef of headCandidates) {
-					if (!refExists(baseRef) || !refExists(headRef)) continue;
-					const range = `${baseRef}..${headRef}`;
-					try {
-						gitOutput = execSync(
-							`git log ${range} --pretty=format:'%H%n%B%n---ENDCOMMIT---'`,
-							{ encoding: 'utf8', cwd },
-						).trim();
-						found = true;
-						return;
-					} catch (e) {
-						lastError = e;
-					}
-				}
-			}
-		};
-		tryFind();
-		if (!found) {
-			attempt(() =>
-				execSync(`git fetch origin ${target}`, { encoding: 'utf8', cwd }),
+		await gitService.tryFetch(target);
+
+		// normalize baseRef type
+		const baseExists = await gitService.refExists(params.target, {
+			where: 'remote',
+			remote: 'origin',
+		});
+
+		const headExists = await gitService.refExists(params.current, {
+			where: 'local',
+		});
+		if (!baseExists || !headExists) {
+			throw new Error(
+				`One or both of the specified branches do not exist: target='${target}' (remote:origin), current='${current}' (local)`,
 			);
-			attempt(() =>
-				execSync(`git fetch origin ${current}`, { encoding: 'utf8', cwd }),
-			);
-			attempt(() => {
-				let originHead = null;
-				try {
-					const sym = execSync(
-						'git symbolic-ref --quiet refs/remotes/origin/HEAD',
-						{ encoding: 'utf8', cwd },
-					).trim();
-					const parts = sym.split('/');
-					originHead = parts.slice(SLICE_POSITION).join('/');
-				} catch {
-					originHead = null;
-				}
-				if (originHead) {
-					baseCandidates.unshift(`origin/${originHead}`);
-					baseCandidates.unshift(`${originHead}`);
-				}
+		}
+		try {
+			// request full commit messages (subject + body)
+			gitOutput = await gitService.logRange(params.target, params.current, {
+				format: 'messages',
+				currentLocal: 'local',
+				targetLocal: 'remote',
 			});
-			tryFind();
+			found = true;
+		} catch (e) {
+			lastError = e;
 		}
 		if (!found) {
 			const msg = lastError
 				? getErrorMessage(lastError)
 				: 'unknown error while running git log';
-			const help = `Tried refs: bases=${baseCandidates.join(', ')} heads=${headCandidates.join(', ')}. Ensure the target branch exists locally or on origin.`;
-			return {
-				content: [
-					{ type: 'text', text: `Failed to get git log: ${msg}. ${help}` },
-				],
-				structuredContent: { error: msg, commits: [] },
-			};
+			throw new Error(
+				`Failed to get git log: ${msg}. Ensure both branches exist and try again.`,
+			);
 		}
 		if (!gitOutput) {
-			return {
-				content: [
-					{ type: 'text', text: 'No commits found between the branches.' },
-				],
-				structuredContent: { commits: [] },
-			};
+			return buildTextResult<typeof outputSchema>(
+				'No commits found between the branches.',
+				{ commits: [] },
+			);
 		}
 		const entries = gitOutput
 			.split('\n---ENDCOMMIT---\n')
@@ -133,20 +99,17 @@ Input schema:
 			.filter(Boolean);
 		const messages = entries.map((entry) => {
 			const lines = entry.split('\n');
-			const bodyLines = lines.slice(1);
-			return bodyLines
+			const subject = (lines[0] || '').trim();
+			const body = lines
+				.slice(1)
 				.join('\n')
 				.replace(/---ENDCOMMIT---/g, '')
 				.trim();
+			return (subject + (body ? '\n\n' + body : '')).trim();
 		});
-		return {
-			content: [
-				{
-					type: 'text',
-					text: `Found ${messages.length} commit(s) between ${target} and ${current}.`,
-				},
-			],
-			structuredContent: { commits: messages },
-		};
+		return buildTextResult<typeof outputSchema>(
+			`Found ${messages.length} commit(s) between ${target} and ${current}.`,
+			{ commits: messages },
+		);
 	}
 }

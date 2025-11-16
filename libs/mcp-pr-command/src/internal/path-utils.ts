@@ -1,11 +1,12 @@
-import { execSync } from 'child_process';
+import { run } from './run';
 
+const options = { cwd: process.cwd() };
 /**
  * Detects if we're running in WSL
  */
-export function isWSL(): boolean {
+export async function isWSL(): Promise<boolean> {
 	try {
-		const release = execSync('uname -r', { encoding: 'utf8' });
+		const release = await run('uname -r', options);
 		return release.toLowerCase().includes('microsoft');
 	} catch {
 		return false;
@@ -16,15 +17,13 @@ export function isWSL(): boolean {
  * Converts a Windows path to WSL format
  * C:\Users\foo\project -> /mnt/c/Users/foo/project
  */
-export function windowsToWSL(path: string): string {
+export async function windowsToWSL(path: string): Promise<string> {
 	if (!path.match(/^[A-Za-z]:\\/)) {
 		return path; // Already WSL format or relative
 	}
 
 	try {
-		const result = execSync(`wslpath "${path}"`, {
-			encoding: 'utf8',
-		}).trim();
+		const result = await run(`wslpath "${path}"`, options);
 		return result;
 	} catch {
 		// Fallback: manual conversion
@@ -40,15 +39,13 @@ export function windowsToWSL(path: string): string {
  * Converts a WSL path to Windows format
  * /mnt/c/Users/foo/project -> C:\Users\foo\project
  */
-export function wslToWindows(path: string): string {
+export async function wslToWindows(path: string): Promise<string> {
 	if (!path.startsWith('/mnt/')) {
 		return path; // Not a WSL mount path
 	}
 
 	try {
-		const result = execSync(`wslpath -w "${path}"`, {
-			encoding: 'utf8',
-		}).trim();
+		const result = await run(`wslpath -w "${path}"`, options);
 		return result;
 	} catch {
 		// Fallback: manual conversion
@@ -67,19 +64,19 @@ export function wslToWindows(path: string): string {
  * - If running in WSL and receives Windows path -> converts to WSL
  * - If running in Windows and receives WSL path -> converts to Windows
  */
-export function normalizePath(path: string): string {
+export async function normalizePath(path: string): Promise<string> {
 	if (!path) return path;
 
-	const runningInWSL = isWSL();
+	const runningInWSL = await isWSL();
 
 	// If we're in WSL and got a Windows path
 	if (runningInWSL && path.match(/^[A-Za-z]:\\/)) {
-		return windowsToWSL(path);
+		return await windowsToWSL(path);
 	}
 
 	// If we're NOT in WSL and got a WSL path
 	if (!runningInWSL && path.startsWith('/mnt/')) {
-		return wslToWindows(path);
+		return await wslToWindows(path);
 	}
 
 	return path;

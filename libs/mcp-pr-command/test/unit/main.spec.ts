@@ -2,7 +2,7 @@ import {
 	DEFAULT_BRANCH_MAPPING,
 	DEFAULT_BRANCH_SCHEMA,
 	type InternalOptions,
-} from '../../src/internal/internal-options';
+} from 'src/internal/internal-options';
 
 const McpServerMock = jest.fn().mockImplementation((opts) => ({
 	connect: jest.fn().mockResolvedValue(undefined),

@@ -1,17 +1,19 @@
 import z from 'zod';
-import fs from 'fs';
-import path from 'path';
-import { execSync } from 'child_process';
+import fs from 'fs/promises';
 import {
-	createBackupTag,
+	buildTextResult,
 	getBranchSchema,
+	Infer,
 	isProtectedBranch,
-	normalizePath,
+	McpResult,
 	ToolRegister,
+	attempt,
+	McpServer,
+	contextService,
+	getErrorMessage,
+	gitService,
+	createSystemTempFile,
 } from '../internal';
-import { attempt } from '../internal/attempt';
-import { getErrorMessage } from '../internal/get-error-message';
-import { McpServer, ToolCallback } from '../internal';
 
 const inputSchema = {
 	cwd: z.string().min(1),
@@ -21,13 +23,13 @@ const inputSchema = {
 };
 const outputSchema = {
 	replaced: z.number(),
-	backupTag: z.string().optional(),
 	error: z.string().optional(),
 };
 
 export class ReplaceCommitMessagesTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'replace-commit-messages',
 			{
 				title: 'Replace commit messages between two branches',
@@ -48,72 +50,48 @@ Commits must have good description for changelogs generation and for other tools
 				inputSchema,
 				outputSchema,
 			},
-			this.replaceCommitMessages as ToolCallback<typeof inputSchema>,
+			this.replaceCommitMessages.bind(this),
 		);
 	}
-	async replaceCommitMessages(params: {
-		cwd: string;
-		current: string;
-		target: string;
-		commits: string[];
-	}) {
+	async replaceCommitMessages(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { current, target, commits: newMessages } = params;
-		const cwd = normalizePath(params.cwd);
-		if (!cwd || !current || !target || !Array.isArray(newMessages)) {
-			return {
-				content: [
-					{
-						type: 'text',
-						text: 'Missing required parameters: cwd, current, target, or commits array',
-					},
-				],
-				structuredContent: { error: 'invalid_input', replaced: 0 },
-			};
+		if (!current || !target || !Array.isArray(newMessages)) {
+			throw new Error(
+				'Missing required parameters: cwd, current, target, or commits array',
+			);
 		}
-		if (isProtectedBranch(current, cwd)) {
-			const schema = getBranchSchema(cwd);
+		if (isProtectedBranch(current)) {
+			const schema = getBranchSchema();
 			const protectedList = Object.values(schema).join(', ');
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Operation not allowed: branch '${current}' is a protected schema branch. Only feature/fix branches can have their history altered. Protected branches: ${protectedList}`,
-					},
-				],
-				structuredContent: { error: 'protected_branch', replaced: 0 },
-			};
+			throw new Error(
+				`Operation not allowed: branch '${current}' is a protected schema branch. Only feature/fix branches can have their history altered. Protected branches: ${protectedList}`,
+			);
 		}
-		const baseCandidates = [`origin/${target}`, `${target}`];
-		const headCandidates = [`${current}`, `origin/${current}`];
+		await gitService.tryFetch(target);
 		let gitHashesOut = '';
-		let baseRefUsed: string | null = null;
-		let headRefUsed: string | null = null;
-		let lastErr: unknown = null;
-		for (const baseRef of baseCandidates) {
-			for (const headRef of headCandidates) {
-				const rangeTry = `${baseRef}..${headRef}`;
-				try {
-					gitHashesOut = execSync(
-						`git log ${rangeTry} --pretty=format:'%H%n---END---'`,
-						{ encoding: 'utf8', cwd },
-					).trim();
-					baseRefUsed = baseRef;
-					headRefUsed = headRef;
-					break;
-				} catch (e) {
-					lastErr = e;
-				}
-			}
-			if (gitHashesOut) break;
+		const baseExists = await gitService.refExists(params.target, {
+			where: 'remote',
+			remote: 'origin',
+		});
+		const headExists = await gitService.refExists(params.current, {
+			where: 'local',
+		});
+		if (!baseExists || !headExists) {
+			throw new Error(
+				`One or both of the specified branches do not exist: target='${target}' (remote:origin), current='${current}' (local)`,
+			);
 		}
+		gitHashesOut = await gitService.logRange(params.target, params.current, {
+			format: 'hashes',
+			currentLocal: 'local',
+			targetLocal: 'remote',
+		});
 		if (!gitHashesOut) {
-			const msg = lastErr
-				? getErrorMessage(lastErr)
-				: 'unknown error while running git log';
-			return {
-				content: [{ type: 'text', text: `Failed to list commits: ${msg}` }],
-				structuredContent: { error: msg, replaced: 0 },
-			};
+			throw new Error(
+				`Failed to list commits: no commits found between '${target}' and '${current}'`,
+			);
 		}
 		const entries = gitHashesOut
 			.split('\n---END---\n')
@@ -121,61 +99,34 @@ Commits must have good description for changelogs generation and for other tools
 			.filter(Boolean);
 		const hashes = entries.map((e) => e.split('\n')[0]).filter(Boolean);
 		if (hashes.length !== newMessages.length) {
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Commit count mismatch. Diff has ${hashes.length} commits but received ${newMessages.length} messages.`,
-					},
-				],
-				structuredContent: {
-					error: 'commit_count_mismatch',
-					diffCount: hashes.length,
-					providedCount: newMessages.length,
-					replaced: 0,
-				},
-			};
+			throw new Error(
+				`Commit count mismatch. Diff has ${hashes.length} commits but received ${newMessages.length} messages.`,
+			);
 		}
-		let backupTag;
+		// Ensure current branch is pushed to origin so origin acts as authoritative backup
 		try {
-			backupTag = createBackupTag(current, cwd);
+			await gitService.push('origin', current);
 		} catch (e) {
 			const msg = getErrorMessage(e);
-			return {
-				content: [{ type: 'text', text: `Failed to create backup: ${msg}` }],
-				structuredContent: { error: msg, replaced: 0 },
-			};
+			throw new Error(
+				`Failed to push branch '${current}' to origin before rewriting: ${msg}`,
+			);
 		}
 		const tempBranch = `temp/rewrite-messages-${Date.now()}`;
 		try {
-			execSync(`git fetch origin ${target}`, { encoding: 'utf8', cwd });
-			attempt(() =>
-				execSync(`git fetch origin ${current}`, { encoding: 'utf8', cwd }),
-			);
-			const createFrom = headRefUsed || current;
-			execSync(`git checkout -b ${tempBranch} ${createFrom}`, {
-				encoding: 'utf8',
-				cwd,
+			await gitService.fetch(target);
+			await gitService.tryFetch(current);
+			await gitService.checkoutBranch(tempBranch, {
+				new: true,
+				startPoint: current,
 			});
 		} catch (e) {
-			attempt(() =>
-				execSync(`git tag -d ${backupTag}`, { encoding: 'utf8', cwd }),
-			);
 			const msg = getErrorMessage(e);
-			return {
-				content: [
-					{ type: 'text', text: `Failed to create temporary branch: ${msg}` },
-				],
-				structuredContent: { error: msg, replaced: 0 },
-			};
+			throw new Error(`Failed to create temporary branch: ${msg}`);
 		}
 		const applyOrder = hashes.slice().reverse();
 		const messagesInApplyOrder = newMessages.slice().reverse();
 		try {
-			const mappingFile = path.join(
-				cwd,
-				`.git/COMMIT_MSG_MAPPING_${Date.now()}.json`,
-			);
 			const mapping: Record<string, string> = {};
 			for (let i = 0; i < applyOrder.length; i++) {
 				const hash = applyOrder[i];
@@ -185,12 +136,7 @@ Commits must have good description for changelogs generation and for other tools
 					.trim();
 				let currentMsg = '';
 				try {
-					currentMsg = execSync(`git show -s --format=%B ${hash}`, {
-						encoding: 'utf8',
-						cwd,
-					})
-						.replace(/\r\n/g, '\n')
-						.trim();
+					currentMsg = await gitService.showCommitBody(hash);
 				} catch {
 					currentMsg = '';
 				}
@@ -199,28 +145,20 @@ Commits must have good description for changelogs generation and for other tools
 				}
 			}
 			if (Object.keys(mapping).length === 0) {
-				attempt(() =>
-					execSync(`git checkout ${current}`, { encoding: 'utf8', cwd }),
+				await attempt(() => gitService.checkoutBranch(current));
+				await attempt(() => gitService.deleteBranch(tempBranch));
+				return buildTextResult<typeof outputSchema>(
+					'No commit messages differ from the provided ones; nothing to rewrite.',
+					{ replaced: 0 },
 				);
-				attempt(() =>
-					execSync(`git branch -D ${tempBranch}`, { encoding: 'utf8', cwd }),
-				);
-				attempt(() =>
-					execSync(`git tag -d ${backupTag}`, { encoding: 'utf8', cwd }),
-				);
-				return {
-					content: [
-						{
-							type: 'text',
-							text: 'No commit messages differ from the provided ones; nothing to rewrite.',
-						},
-					],
-					structuredContent: { replaced: 0 },
-				};
 			}
-			fs.writeFileSync(mappingFile, JSON.stringify(mapping, null, 2), 'utf8');
-			const filterScript = path.join(cwd, `.git/msg-filter-${Date.now()}.sh`);
-			const scriptContent = `#!/bin/sh
+			const mappingFile = await createSystemTempFile(
+				`COMMIT_MSG_MAPPING_${Date.now()}.json`,
+				JSON.stringify(mapping, null, 2),
+			);
+			const filterScript = await createSystemTempFile(
+				`msg-filter-${Date.now()}.sh`,
+				`#!/bin/sh
 # git filter-branch provides the current commit in $GIT_COMMIT
 export MAPPING_FILE="${mappingFile}"
 COMMIT_HASH="$GIT_COMMIT"
@@ -240,80 +178,48 @@ NODE
 else
   cat
 fi
-`;
-			fs.writeFileSync(filterScript, scriptContent, 'utf8');
-			fs.chmodSync(filterScript, '0755');
+`,
+			);
+			await fs.chmod(filterScript, '0755');
 			try {
-				const baseToUse = baseRefUsed || `origin/${target}`;
-				const range = `${baseToUse}..${tempBranch}`;
-				execSync(
-					`git filter-branch -f --msg-filter "${filterScript}" ${range}`,
-					{ encoding: 'utf8', cwd, stdio: 'pipe' },
+				await gitService.filterBranchMsgFilter(
+					target,
+					tempBranch,
+					filterScript,
 				);
 			} finally {
-				attempt(() => fs.unlinkSync(mappingFile));
-				attempt(() => fs.unlinkSync(filterScript));
+				await attempt(() => fs.unlink(mappingFile));
+				await attempt(() => fs.unlink(filterScript));
+				await attempt(() =>
+					fs.rm(mappingFile, { recursive: true, force: true }),
+				);
+				await attempt(() =>
+					fs.rm(filterScript, { recursive: true, force: true }),
+				);
 			}
 		} catch (e) {
-			attempt(() => execSync('git reset --hard', { encoding: 'utf8', cwd }));
-			attempt(() =>
-				execSync(`git checkout ${current}`, { encoding: 'utf8', cwd }),
-			);
-			attempt(() =>
-				execSync(`git branch -D ${tempBranch}`, { encoding: 'utf8', cwd }),
-			);
+			await attempt(async () => await gitService.reset({ mode: 'hard' }));
+			await attempt(async () => await gitService.checkoutBranch(current));
+			await attempt(async () => await gitService.deleteBranch(tempBranch));
 			const msg = getErrorMessage(e);
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Failed while rewriting commits: ${msg}. Backup available at tag: ${backupTag}`,
-					},
-				],
-				structuredContent: { error: msg, replaced: 0, backupTag },
-			};
+			throw new Error(`Failed while rewriting commits: ${msg}`);
 		}
 		try {
-			const newHead = execSync('git rev-parse HEAD', {
-				encoding: 'utf8',
-				cwd,
-			}).trim();
-			execSync(`git branch -f ${current} ${newHead}`, {
-				encoding: 'utf8',
-				cwd,
-			});
-			execSync(`git checkout ${current}`, { encoding: 'utf8', cwd });
-			execSync(`git push --force origin ${current}`, { encoding: 'utf8', cwd });
+			const newHead = await gitService.revParseHead();
+			await gitService.branchForceUpdate(current, newHead);
+			await gitService.checkoutBranch(current);
+			await gitService.push('origin', current, { force: true });
 		} catch (e) {
-			attempt(() =>
-				execSync(`git checkout ${current}`, { encoding: 'utf8', cwd }),
-			);
-			attempt(() =>
-				execSync(`git branch -D ${tempBranch}`, { encoding: 'utf8', cwd }),
-			);
+			await attempt(async () => await gitService.checkoutBranch(current));
+			await attempt(async () => await gitService.deleteBranch(tempBranch));
 			const msg = getErrorMessage(e);
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Failed to update branch or push changes: ${msg}. Backup available at tag: ${backupTag}`,
-					},
-				],
-				structuredContent: { error: msg, replaced: 0, backupTag },
-			};
+			throw new Error(`Failed to update branch or push changes: ${msg}`);
 		} finally {
-			attempt(() =>
-				execSync(`git branch -D ${tempBranch}`, { encoding: 'utf8', cwd }),
-			);
+			await attempt(async () => await gitService.deleteBranch(tempBranch));
 		}
-		return {
-			content: [
-				{
-					type: 'text',
-					text: `Successfully replaced ${hashes.length} commit message(s) on branch '${current}'. Backup criado na tag: ${backupTag}`,
-				},
-			],
-			structuredContent: { replaced: hashes.length, backupTag },
-		};
+		return buildTextResult<typeof outputSchema>(
+			`Successfully replaced ${hashes.length} commit message(s) on branch '${current}`,
+			{ replaced: hashes.length },
+		);
 	}
 }

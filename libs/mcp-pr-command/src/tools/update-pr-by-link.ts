@@ -1,9 +1,16 @@
-import { McpServer, ToolCallback, normalizePath } from '../internal';
+import {
+	contextService,
+	ghClient,
+	Infer,
+	McpServer,
+	preparePr,
+	preparePrOutputSchema,
+} from '../internal';
+import { buildTextResult } from '../internal/build-result';
 import { getErrorMessage, ToolRegister } from 'src/internal';
-import { PreparePrTool } from './prepare-pr.tool';
-import { execSync } from 'child_process';
-import { assertNonNullish, Nullable } from 'is-this-a-pigeon';
+import { assertDefined, assertNonNullish, Nullable } from 'is-this-a-pigeon';
 import z from 'zod';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types';
 
 const inputSchema = {
 	cwd: z
@@ -12,9 +19,17 @@ const inputSchema = {
 		.describe('Current working directory of the repository'),
 	prUrl: z.string().min(1).describe('Full URL of the PR to update'),
 };
+
+const outputSchema = {
+	...preparePrOutputSchema,
+	currentBranch: z.string(),
+	targetBranch: z.string(),
+};
+
 export class UpdatePRByLinkTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'update-pr-by-link',
 			{
 				title: 'Update PR by providing its URL',
@@ -42,9 +57,9 @@ Usage example:
   "prUrl": "https://github.com/codibre/mcrp-pr-monorepo/pull/123"
 }`,
 				inputSchema,
-				outputSchema: PreparePrTool.preparePrOutputSchema,
+				outputSchema,
 			},
-			this.updatePrByLinkHandler as ToolCallback<typeof inputSchema>,
+			this.updatePrByLinkHandler.bind(this),
 		);
 	}
 
@@ -57,77 +72,66 @@ Usage example:
 	 *   prUrl: string   // Required. URL of the PR to update.
 	 * }
 	 */
-	async updatePrByLinkHandler(params: { cwd: string; prUrl: string }) {
+	async updatePrByLinkHandler(
+		params: Infer<typeof inputSchema>,
+	): Promise<CallToolResult> {
 		const { prUrl } = params;
-		const cwd = normalizePath(params.cwd);
 
 		// Extract PR number from URL
 		const prNumberMatch = prUrl.match(/\/pull\/(\d+)/);
 		if (!prNumberMatch?.[1]) {
-			return {
-				content: [
-					{
-						type: 'text',
-						text: 'Invalid PR URL. Could not extract PR number.',
-					},
-				],
-				structuredContent: { error: 'Invalid PR URL' },
-			};
+			throw new Error('Invalid PR URL. Could not extract PR number.');
 		}
 
 		const prNumber = parseInt(prNumberMatch[1], 10);
 
 		// Get PR details to extract branches
-		let prDetailOutput;
+		let prDetailsUnknown: unknown;
 		try {
-			prDetailOutput = execSync(
-				`gh pr view ${prNumber} --json headRefName,baseRefName,title,body`,
-				{ encoding: 'utf8', cwd },
-			).trim();
+			prDetailsUnknown = ghClient.prView(prNumber, [
+				'headRefName',
+				'baseRefName',
+				'title',
+				'body',
+			]);
 		} catch (error) {
 			const message = getErrorMessage(error);
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Failed to fetch PR #${prNumber} details: ${message}`,
-					},
-				],
-				structuredContent: { error: `Failed to fetch PR details: ${message}` },
-			};
+			throw new Error(`Failed to fetch PR #${prNumber} details: ${message}`);
 		}
-
 		const prDetails: Nullable<{
 			headRefName: string;
 			baseRefName: string;
 			title: string;
 			body: string;
-		}> = JSON.parse(prDetailOutput);
+		}> = prDetailsUnknown as Nullable<{
+			headRefName: string;
+			baseRefName: string;
+			title: string;
+			body: string;
+		}>;
 		assertNonNullish(prDetails, 'PR details should be defined');
 		const currentBranch = prDetails.headRefName;
 		const targetBranch = prDetails.baseRefName;
 
 		// Execute prepare-pr logic
-		const prepareResult = await PreparePrTool.preparePr({
-			cwd,
+		const prepareResult = await preparePr({
 			targetBranch,
 			currentBranch,
 			cardLink: '',
 		});
+		assertDefined(
+			prepareResult.structuredContent,
+			'Prepare PR result structured content should be defined',
+		);
 
-		return {
-			content: [
-				{
-					type: 'text',
-					text: `Fetched PR #${prNumber} details. Head branch: '${currentBranch}', Base branch: '${targetBranch}'. Ready to update.`,
-				},
-			],
-			structuredContent: {
-				prNumber,
+		return buildTextResult<typeof outputSchema>(
+			`Fetched PR #${prNumber} details. Head branch: '${currentBranch}', Base branch: '${targetBranch}'. Ready to update.`,
+			{
+				...prepareResult.structuredContent,
 				currentBranch,
 				targetBranch,
-				...prepareResult.structuredContent,
+				prNumber,
 			},
-		};
+		);
 	}
 }

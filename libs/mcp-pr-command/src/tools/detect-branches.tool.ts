@@ -1,9 +1,16 @@
 import z from 'zod';
-import { execSync } from 'child_process';
-import { attempt } from '../internal/attempt';
-import { inferCardLinkFromBranch } from '../internal/card-link-utils';
-import { ToolRegister, normalizePath } from 'src/internal';
-import { McpServer, ToolCallback } from '../internal';
+import {
+	Infer,
+	ToolRegister,
+	attempt,
+	inferCardLinkFromBranch,
+	normalizePath,
+	gitService,
+	contextService,
+	McpResult,
+} from 'src/internal';
+import { McpServer } from '../internal';
+import { buildTextResult } from '../internal/build-result';
 
 const inputSchema = {
 	cwd: z
@@ -24,7 +31,8 @@ const outputSchema = {
 
 export class DetectBranchesTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'detect-branches',
 			{
 				title: 'Opening or updating PR workflow, step 1: Detect Branches',
@@ -42,39 +50,33 @@ export class DetectBranchesTool implements ToolRegister {
 				inputSchema,
 				outputSchema,
 			},
-			this.detectBranches as ToolCallback<typeof inputSchema>,
+			this.detectBranches.bind(this),
 		);
 	}
 
-	async detectBranches(params: { cwd: string; targetBranch?: string }) {
+	async detectBranches(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { targetBranch: providedTargetBranch } = params;
-		const cwd = normalizePath(params.cwd);
+		await normalizePath(params.cwd);
 		let currentBranch = '';
 		let suggestedTarget = 'staging';
-		attempt(() => {
-			currentBranch = execSync('git rev-parse --abbrev-ref HEAD', {
-				encoding: 'utf8',
-				cwd,
-			}).trim();
-			const allBranches = execSync('git branch', { encoding: 'utf8', cwd })
-				.split('\n')
-				.map((b) => b.trim().replace(/^\* /, ''))
-				.filter((b) => b && b !== currentBranch);
+		await attempt(async () => {
+			currentBranch = await gitService.revParseAbbrevRef();
+			const allBranches = (await gitService.listBranches()).filter(
+				(b) => b && b !== currentBranch,
+			);
 			if (allBranches.length > 0) {
-				let closestBranch = null;
+				let closestBranch: string | null = null;
 				let minDistance = Infinity;
 				for (const branch of allBranches) {
 					try {
-						const mergeBase = execSync(
-							`git merge-base ${currentBranch} ${branch}`,
-							{ encoding: 'utf8', cwd },
-						).trim();
+						const mergeBase = await gitService.mergeBase(currentBranch, branch);
 						if (!mergeBase) continue;
-						const distance = execSync(
-							`git rev-list --count ${mergeBase}..${currentBranch}`,
-							{ encoding: 'utf8', cwd },
-						).trim();
-						const distanceNum = parseInt(distance, 10);
+						const distanceNum = await gitService.revListCountBetween(
+							mergeBase,
+							currentBranch,
+						);
 						if (distanceNum > 0 && distanceNum < minDistance) {
 							minDistance = distanceNum;
 							closestBranch = branch;
@@ -98,19 +100,14 @@ export class DetectBranchesTool implements ToolRegister {
 		}
 		nextActions.push('Run tool prepare-pr');
 		if (providedTargetBranch) suggestedTarget = providedTargetBranch;
-		return {
-			content: [
-				{
-					type: 'text',
-					text: `Detected current branch: '${currentBranch}'. Suggested target branch for PR: '${suggestedTarget}'.`,
-				},
-			],
-			structuredContent: {
+		return buildTextResult<typeof outputSchema>(
+			`Detected current branch: '${currentBranch}'. Suggested target branch for PR: '${suggestedTarget}'.`,
+			{
 				currentBranch,
 				suggestedTarget,
 				inferedCardLink,
 				nextActions: nextActions.map((x, idx) => `${idx + 1}. ${x}`),
 			},
-		};
+		);
 	}
 }

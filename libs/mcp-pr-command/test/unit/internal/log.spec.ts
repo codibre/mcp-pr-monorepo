@@ -1,4 +1,4 @@
-import { log } from '../../../src/internal/log';
+import { log } from 'src/internal';
 
 describe('log', () => {
 	it('should call console.error with the correct prefix and message', () => {

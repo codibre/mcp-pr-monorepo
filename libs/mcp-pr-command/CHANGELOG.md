@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.1](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.6.0...mcp-pr-command@0.6.1) (2025-11-16)
+### Fixes:
+
+<details>
+<summary>improving coverage and memory usage</summary>
+
+
+> Improving change files writing for better
+> memory consumption and also increasing
+> unit test coverage
+
+
+
+[View commit `9f11599`](https://github.com/codibre/mcp-pr-monorepo/commit/9f11599)
+
+
+</details>
+
 ## [0.6.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.5.0...mcp-pr-command@0.6.0) (2025-11-16)
 ### Features:
 

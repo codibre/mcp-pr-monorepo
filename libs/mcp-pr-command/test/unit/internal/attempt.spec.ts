@@ -1,96 +1,64 @@
-import { attempt, attemptCB } from 'src/internal';
+import { attempt, attemptCB } from 'src/internal/attempt';
 
-describe('attempt', () => {
-	// Arrange //
-	const syncSuccess = () => 42;
-	const syncError = () => {
-		throw new Error('fail');
-	};
-	const asyncSuccess = async () => 99;
-	const asyncError = async () => {
-		throw new Error('async fail');
-	};
-
-	// Act & Assert //
-	it('should return value for sync success', () => {
-		// Act
-		const result = attempt(syncSuccess);
-		// Assert
+describe('attempt (utils)', () => {
+	it('returns value for sync success', () => {
+		const result = attempt(() => 42);
 		expect(result).toBe(42);
 	});
 
-	it('should call catchCb for sync error', () => {
-		// Arrange
+	it('calls catchCb for sync error', () => {
 		const catchCb = jest.fn().mockReturnValue('caught');
-		// Act
-		const result = attempt(syncError, catchCb);
-		// Assert
+		const result = attempt(() => {
+			throw new Error('fail');
+		}, catchCb);
 		expect(result).toBe('caught');
 		expect(catchCb).toHaveBeenCalledWith(expect.any(Error));
 	});
 
-	it('should return promise value for async success', async () => {
-		// Act
-		const result = attempt(asyncSuccess);
-		// Assert
+	it('returns promise value for async success', async () => {
+		const result = attempt(async () => 99);
 		await expect(result).resolves.toBe(99);
 	});
 
-	it('should call catchCb for async error', async () => {
-		// Arrange
+	it('calls catchCb for async error', async () => {
 		const catchCb = jest.fn().mockReturnValue('async caught');
-		// Act
-		const result = attempt(asyncError, catchCb);
-		// Assert
+		const result = attempt(async () => {
+			throw new Error('async fail');
+		}, catchCb);
 		await expect(result).resolves.toBe('async caught');
 		expect(catchCb).toHaveBeenCalledWith(expect.any(Error));
 	});
 });
 
 describe('attemptCB', () => {
-	// Arrange //
-	const add = (a: number, b: number) => a + b;
-	const fail = () => {
-		throw new Error('fail');
-	};
-	const asyncAdd = async (a: number, b: number) => a + b;
-	const asyncFail = async () => {
-		throw new Error('async fail');
-	};
-
-	it('should wrap sync function and return result', () => {
-		// Act
+	it('wraps sync function and returns result', () => {
+		const add = (a: number, b: number) => a + b;
 		const wrapped = attemptCB(add);
-		// Assert
 		expect(wrapped(2, 3)).toBe(5);
 	});
 
-	it('should wrap sync function and call catchCb on error', () => {
-		// Arrange
+	it('wraps sync function and calls catchCb on error', () => {
 		const catchCb = jest.fn().mockReturnValue('caught');
-		const wrapped = attemptCB(fail, catchCb);
-		// Act
-		const result = wrapped();
-		// Assert
-		expect(result).toBe('caught');
+		const wrapped = attemptCB(() => {
+			throw new Error('fail');
+		}, catchCb);
+		const res = wrapped();
+		expect(res).toBe('caught');
 		expect(catchCb).toHaveBeenCalledWith(expect.any(Error));
 	});
 
-	it('should wrap async function and return promise result', async () => {
-		// Act
-		const wrapped = attemptCB(asyncAdd);
-		// Assert
+	it('wraps async function and returns promise result', async () => {
+		const wrapped = attemptCB(async (a: number, b: number) => a + b);
 		await expect(wrapped(4, 5)).resolves.toBe(9);
 	});
 
-	it('should wrap async function and call catchCb on error', async () => {
-		// Arrange
+	it('wraps async function and calls catchCb on error', async () => {
 		const catchCb = jest.fn().mockReturnValue('async caught');
-		const wrapped = attemptCB(asyncFail, catchCb);
-		// Act
-		const result = wrapped();
-		// Assert
-		await expect(result).resolves.toBe('async caught');
+		const wrapped = attemptCB(async () => {
+			throw new Error('async fail');
+		}, catchCb);
+		const res = wrapped();
+		await expect(res).resolves.toBe('async caught');
 		expect(catchCb).toHaveBeenCalledWith(expect.any(Error));
 	});
 });

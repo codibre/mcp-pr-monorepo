@@ -4,11 +4,12 @@ import z from 'zod';
 import { Infer, McpResult } from './mcp';
 import { ghClient } from './gh-client-instance';
 import { cwdJoin } from './cwd';
-import { createTempFile, generateChangesFile } from './git-utils';
 import { gitService } from './git-service';
 import { inferCardLinkFromBranch } from './card-link-utils';
 import { context } from './context';
 import { buildCopilotPrompt } from './build-copilot-prompt';
+import { buildTextResult } from './build-result';
+import { createTempFile } from './temp-file';
 
 async function existDir(githubDir: string) {
 	try {
@@ -41,16 +42,26 @@ export const preparePrOutputSchema = {
 	error: z.string().optional(),
 };
 
+async function* getPRContentStream(existingPRContent: {
+	title: string;
+	body: string;
+}) {
+	yield 'Title: ';
+	yield existingPRContent.title;
+	yield '\n\n';
+	yield existingPRContent.body ?? '';
+}
+
 export async function preparePr(
 	params: OmitFields<Infer<typeof preparePrInputSchema>, 'cwd'>,
 ): Promise<McpResult<typeof preparePrOutputSchema>> {
 	const { targetBranch, currentBranch, cardLink = '' } = params;
 	// used ghClient.prList instead of direct gh exec
 	let existingPR: Nullable<number> = null;
-	let existingPRContent: Nullable<{ title: string; body: string }> = null;
 	let prContentFile: string | null = null;
 	const githubDir = cwdJoin('.github');
 	let prTemplate: string | null = null;
+	const candidateSet = new Set<string>();
 	if (await existDir(githubDir)) {
 		const files = await fs.readdir(githubDir);
 		const match = files.find(
@@ -66,16 +77,17 @@ export async function preparePr(
 	if (prList?.[0]?.number) existingPR = prList[0].number;
 	if (existingPR) {
 		const details = await ghClient.prView(existingPR, ['title', 'body']);
-		if (details) {
-			existingPRContent = details;
-			assertNonNullish(
-				existingPRContent,
-				'Existing PR content should be defined',
-			);
-			prContentFile = await createTempFile(
-				`.copilot-pr-content-${existingPR}.md`,
-				`Title: ${existingPRContent.title}\n\n${existingPRContent.body || ''}`,
-			);
+		assertNonNullish(details, 'Existing PR content should be defined');
+		prContentFile = await createTempFile(
+			`.copilot-pr-content-${existingPR}.md`,
+			getPRContentStream(details),
+		);
+		if (context.cardLinkWebSitePattern) {
+			const title = details.title || '';
+			const body = details.body || '';
+			const textToScan = `${title}\n${body}`;
+			const matches = textToScan.match(context.cardLinkWebSitePattern) || [];
+			for (const m of matches) candidateSet.add(m);
 		}
 	}
 
@@ -105,20 +117,14 @@ export async function preparePr(
 		});
 	}
 
-	const changesFile = await generateChangesFile(targetBranch, currentBranch);
+	const changesFile = await gitService.generateChangesFile(
+		targetBranch,
+		currentBranch,
+	);
 
-	const candidateSet = new Set<string>();
 	if (cardLink) candidateSet.add(cardLink);
 	const inferred = inferCardLinkFromBranch(currentBranch);
 	if (inferred) candidateSet.add(inferred);
-	const urlRegex = context.cardLinkWebSitePattern;
-	if (urlRegex && existingPRContent && typeof existingPRContent === 'object') {
-		const title = existingPRContent.title || '';
-		const body = existingPRContent.body || '';
-		const textToScan = `${title}\n${body}`;
-		const matches = textToScan.match(urlRegex) || [];
-		for (const m of matches) candidateSet.add(m);
-	}
 	const cardLinks = Array.from(candidateSet);
 	const filesToRead: string[] = [];
 	if (changesFile) filesToRead.push(changesFile);
@@ -144,19 +150,14 @@ export async function preparePr(
 		'If user asks to changes something, apply changes and show title and body again. Repeat until user confirms it is ok',
 	);
 	nextActions.push('Run tool submit-pr');
-	return {
-		content: [
-			{
-				type: 'text',
-				text: `Prepared PR artifacts successfully. Changes file: '${changesFile}'.${existingPR ? ` Existing PR #${existingPR} will be updated.` : ' A new PR will be created.'}`,
-			},
-		],
-		structuredContent: {
+	return buildTextResult<typeof preparePrOutputSchema>(
+		`Prepared PR artifacts successfully. Changes file: '${changesFile}'.${existingPR ? ` Existing PR #${existingPR} will be updated.` : ' A new PR will be created.'}`,
+		{
 			prNumber: existingPR,
 			prTemplate,
 			prDescriptionAndTitleInstructions: buildCopilotPrompt({
 				changesFile,
-				existingPRContent,
+				prContentFile,
 				prTemplate,
 			}),
 			filesToRead,
@@ -164,5 +165,5 @@ export async function preparePr(
 			fetchCardInfoBeforeStep3: true,
 			nextActions: nextActions.map((x, idx) => `${idx + 1}. ${x}`),
 		},
-	};
+	);
 }

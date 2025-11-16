@@ -2,6 +2,7 @@ import { promisify } from 'util';
 import { exec, ExecOptions } from 'child_process';
 import { contextService } from './context-service';
 import { attempt } from './attempt';
+import { log } from './log';
 
 const execAsync = promisify(exec);
 
@@ -14,7 +15,7 @@ export async function run(cmd: string, options?: ExecOptions) {
 	};
 	// require exec dynamically so tests can mock child_process.exec
 
-	console.error(`Running command: ${cmd}`);
+	log(`Running command: ${cmd}`);
 	const res = await execAsync(cmd, opts);
 	return res.stdout?.toString().trim() ?? '';
 }

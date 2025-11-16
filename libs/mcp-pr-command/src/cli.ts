@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { Command } from 'commander';
 import { startServer } from './main';
 import { McpPRCommandOptions } from './mcp-pr-command-options';
-import { getErrorMessage } from './internal';
+import { getErrorMessage, log } from './internal';
 
 const program = new Command();
 
@@ -24,10 +24,7 @@ if (cliOpts.mcpOptions) {
 	try {
 		options = JSON.parse(cliOpts.mcpOptions);
 	} catch (err) {
-		console.error(
-			'Invalid JSON passed to --mcp-options:',
-			getErrorMessage(err),
-		);
+		log('Invalid JSON passed to --mcp-options:', getErrorMessage(err));
 		process.exit(1);
 	}
 } else if (cliOpts.mcpOptionsFile) {
@@ -35,7 +32,7 @@ if (cliOpts.mcpOptions) {
 		const raw = readFileSync(cliOpts.mcpOptionsFile, 'utf8');
 		options = JSON.parse(raw);
 	} catch (err) {
-		console.error('Failed to read/parse options file:', getErrorMessage(err));
+		log('Failed to read/parse options file:', getErrorMessage(err));
 		process.exit(1);
 	}
 }

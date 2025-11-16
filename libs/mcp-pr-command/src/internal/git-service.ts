@@ -2,6 +2,9 @@ import { run, command } from './run';
 import { attempt } from './attempt';
 import { assertDefined } from 'is-this-a-pigeon';
 import { getErrorMessage } from './get-error-message';
+import { createTempFile } from './temp-file';
+import { fluent } from '@codibre/fluent-iterable';
+import { assertNonNullish } from 'is-this-a-pigeon';
 
 export type LocalType = 'local' | 'remote';
 
@@ -312,6 +315,45 @@ export class GitService {
 			.with('--msg-filter', `"${filterScriptPath}"`)
 			.with(range);
 		return await run(cmd.toString());
+	}
+
+	/**
+	 * Generate a changes file between two branches and return the path.
+	 */
+	async generateChangesFile(targetBranch: string, currentBranch: string) {
+		const options = { targetLocal: 'remote', currentLocal: 'local' } as const;
+		assertNonNullish(
+			await this.refExists(currentBranch, { where: 'local', remote: 'origin' }),
+			`Unable to resolve branch '${currentBranch}' to a valid git ref. Please verify the current branch name.`,
+		);
+		assertNonNullish(
+			await this.refExists(targetBranch, { where: 'remote', remote: 'origin' }),
+			`Target branch '${targetBranch}' not found on remote. Please verify the target branch name.`,
+		);
+
+		return await createTempFile(
+			'.copilot-changes.txt',
+			async function* (this: GitService) {
+				const commits = await this.logRange(targetBranch, currentBranch, {
+					format: 'messages',
+					...options,
+				});
+				yield '=== COMMIT ===\n';
+				yield* fluent(commits.split('\n---ENDCOMMIT---\n'))
+					.map((c: string) => c.trim())
+					.filter(Boolean)
+					.flatMap((x: string) => [x, '\n\n---\n\n']);
+				yield '=== DIFF SUMMARY ===\n';
+				yield (await this.diff(targetBranch, currentBranch, {
+					stat: true,
+					...options,
+				})) ?? 'No diff available';
+				yield '\n\n=== CODE DIFF ===\n';
+				yield (await attempt(() =>
+					this.diff(targetBranch, currentBranch, options),
+				)) ?? 'No code diff available';
+			}.bind(this),
+		);
 	}
 }
 

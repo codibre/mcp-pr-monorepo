@@ -1,138 +1,105 @@
-import fs from 'fs';
+import os from 'os';
+import fs from 'fs/promises';
 import path from 'path';
-import { execSync } from 'child_process';
-import { attempt } from './attempt';
-import { getErrorMessage } from '.';
-import { refExists } from './git-helpers';
+import { attemptCB } from './attempt';
+import { getErrorMessage, gitService, LocalType } from '../internal';
+import { contextService } from './context-service';
+import { cwdJoin } from './cwd';
 
-export async function createTempFile(
-	fileName: string,
-	content: string,
-	cwd: string,
-) {
-	const tempFilePath = path.join(cwd, '.tmp', fileName);
-	await fs.promises.mkdir(path.dirname(tempFilePath), { recursive: true });
-	await fs.promises.writeFile(tempFilePath, content, { encoding: 'utf8' });
+const systemTempFolder = path.join(os.tmpdir(), 'mcp-pr-command');
+
+export async function createSystemTempFile(fileName: string, content: string) {
+	const tempFilePath = path.join(systemTempFolder, fileName);
+	await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
+	await fs.writeFile(tempFilePath, content, { encoding: 'utf8' });
 	return tempFilePath;
 }
 
-export function createBackupTag(branchName: string, cwd: string) {
+export async function createTempFile(fileName: string, content: string) {
+	const tempFilePath = cwdJoin('.tmp', fileName);
+	await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
+	await fs.writeFile(tempFilePath, content, { encoding: 'utf8' });
+	return tempFilePath;
+}
+
+export async function createBackupTag(branchName: string) {
 	const timestamp = Date.now();
 	const backupTag = `backup/${branchName}/${timestamp}`;
 	try {
-		execSync(`git tag ${backupTag}`, { encoding: 'utf8', cwd });
+		// createTag is async now
+		await gitService.createTag(backupTag);
 		return backupTag;
 	} catch (e) {
 		throw new Error(`Failed to create backup tag: ${getErrorMessage(e)}`);
 	}
 }
 
-// Helper to check if a branch exists (local or remote)
-export function branchExists(branch: string, cwd: string): boolean {
-	try {
-		// Try local branch first
-		execSync(`git show-ref --verify --quiet refs/heads/${branch}`, {
-			encoding: 'utf8',
-			cwd,
-		});
-		return true;
-	} catch {
-		// Try remote branch
-		try {
-			const out = execSync(`git ls-remote --heads origin ${branch}`, {
-				encoding: 'utf8',
-				cwd,
-			}).trim();
-			return !!out;
-		} catch {
-			return false;
-		}
-	}
-}
-
-// Helper to check if a branch exists locally only
-export function branchExistsLocally(branch: string, cwd: string): boolean {
-	try {
-		execSync(`git show-ref --verify --quiet refs/heads/${branch}`, {
-			encoding: 'utf8',
-			cwd,
-		});
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-// Helper to resolve a branch to its actual git ref (tries local, then remote)
-function resolveBranchRef(branch: string, cwd: string): string | null {
-	// Try local branch first, then remote
-	const candidates = [branch, `origin/${branch}`];
-	for (const candidate of candidates) {
-		if (refExists(candidate, cwd)) {
-			return candidate;
-		}
-	}
-
-	return null;
-}
-
-export const clearTempDir = (cwd: string) =>
-	attempt(() => fs.promises.rmdir(path.join(cwd, '.tmp'), { recursive: true }));
+export const clearTempDir = attemptCB(() =>
+	fs.rmdir(path.join(contextService.cwd, '.tmp'), {
+		recursive: true,
+	}),
+);
 
 export async function generateChangesFile(
 	targetBranch: string,
 	currentBranch: string,
-	cwd: string,
 ) {
-	// Validate branches exist before running git commands
-	if (!branchExists(currentBranch, cwd)) {
-		throw new Error(
-			`Branch '${currentBranch}' does not exist in this repository. Please provide an existing branch name.`,
-		);
+	let currentLocal: LocalType | undefined;
+
+	if (
+		await gitService.refExists(currentBranch, {
+			where: 'local',
+			remote: 'origin',
+		})
+	) {
+		currentLocal = 'local';
+	} else if (
+		await gitService.refExists(currentBranch, {
+			where: 'remote',
+			remote: 'origin',
+		})
+	) {
+		currentLocal = 'remote';
 	}
 
-	if (!branchExists(targetBranch, cwd)) {
-		throw new Error(
-			`Branch '${targetBranch}' does not exist in this repository. Please provide an existing branch name.`,
-		);
-	}
-
-	// Resolve branches to actual git refs (works with arbitrary branches, not just current)
-	const targetRef = resolveBranchRef(targetBranch, cwd);
-	const currentRef = resolveBranchRef(currentBranch, cwd);
-
-	if (!targetRef) {
-		throw new Error(
-			`Unable to resolve branch '${targetBranch}' to a valid git ref.`,
-		);
-	}
-
-	if (!currentRef) {
+	if (!currentLocal) {
 		throw new Error(
 			`Unable to resolve branch '${currentBranch}' to a valid git ref.`,
 		);
 	}
 
-	const commits = execSync(
-		`git log ${targetRef}..${currentRef} --pretty=format:%B%n---ENDCOMMIT---`,
-		{ encoding: 'utf8', cwd },
-	).trim();
+	if (
+		!(await gitService.refExists(targetBranch, {
+			where: 'remote',
+			remote: 'origin',
+		}))
+	) {
+		throw new Error(
+			`Target branch '${targetBranch}' not found on remote. Please verify the branch name.`,
+		);
+	}
+	const commits = await gitService.logRange(targetBranch, currentBranch, {
+		format: 'messages',
+		targetLocal: 'remote',
+		currentLocal,
+	});
 	const commitEntries = commits
 		.split('\n---ENDCOMMIT---\n')
 		.map((c) => c.trim())
 		.filter(Boolean);
 	const commitsTruncated = commitEntries.join('\n\n---\n\n');
 	const diffSummary =
-		execSync(`git diff ${targetRef}...${currentRef} --stat`, {
-			encoding: 'utf8',
-			cwd,
-		}).trim() || 'No diff available';
+		(await gitService.diff(targetBranch, currentBranch, {
+			stat: true,
+			targetLocal: 'remote',
+			currentLocal,
+		})) || 'No diff available';
 	let codeDiff = '';
 	try {
-		codeDiff = execSync(`git diff ${targetRef}...${currentRef}`, {
-			encoding: 'utf8',
-			cwd,
-		}).trim();
+		codeDiff = await gitService.diff(targetBranch, currentBranch, {
+			targetLocal: 'remote',
+			currentLocal,
+		});
 	} catch {
 		codeDiff = 'No code diff available';
 	}
@@ -140,7 +107,6 @@ export async function generateChangesFile(
 	const changesFile = await createTempFile(
 		'.copilot-changes.txt',
 		changesContent,
-		cwd,
 	);
 	return changesFile;
 }

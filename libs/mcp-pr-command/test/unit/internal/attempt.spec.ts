@@ -1,4 +1,4 @@
-import { attempt, attemptCB } from '../../../src/internal/attempt';
+import { attempt, attemptCB } from 'src/internal';
 
 describe('attempt', () => {
 	// Arrange //

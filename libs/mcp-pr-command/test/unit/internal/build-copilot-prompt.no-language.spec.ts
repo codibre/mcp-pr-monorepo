@@ -1,5 +1,4 @@
-import { buildCopilotPrompt } from '../../../src/internal/build-copilot-prompt';
-import { context } from '../../../src/internal/context';
+import { buildCopilotPrompt, context } from 'src/internal';
 
 describe('buildCopilotPrompt (no language in context)', () => {
 	beforeAll(() => {

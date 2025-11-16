@@ -1,35 +1,35 @@
 import z from 'zod';
-import { execSync } from 'child_process';
-import path from 'path';
-import fs from 'fs';
+import fs from 'fs/promises';
 import {
-	createBackupTag,
+	attempt,
+	cwdJoin,
 	getBranchSchema,
+	getErrorMessage,
+	Infer,
 	isProtectedBranch,
-	normalizePath,
+	McpResult,
+	McpServer,
+	gitService,
 	ToolRegister,
+	contextService,
 } from '../internal';
-import { refExists as refExistsHelper } from '../internal/git-helpers';
-import { attempt } from '../internal/attempt';
-import { getErrorMessage } from '../internal/get-error-message';
-import { McpServer, ToolCallback } from '../internal';
+import { buildTextResult } from '../internal/build-result';
 
-const inputSchema: z.ZodRawShape = {
+const inputSchema = {
 	cwd: z.string().min(1),
 	current: z.string().min(1),
 	target: z.string().min(1),
 	commit: z.string().min(1),
 };
-const outputSchema: z.ZodRawShape = {
+const outputSchema = {
 	squashed: z.boolean(),
 	commitCount: z.number().optional(),
-	backupTag: z.string().optional(),
-	error: z.string().optional(),
 };
 
 export class SquashCommitsTool implements ToolRegister {
 	registerTool(server: McpServer): void {
-		server.registerTool(
+		contextService.registerTool(
+			server,
 			'squash-commits',
 			{
 				title: 'Squash all commits between two branches into one',
@@ -56,177 +56,144 @@ IMPORTANT:
 				inputSchema,
 				outputSchema,
 			},
-			this.squashCommits as ToolCallback<typeof inputSchema>,
+			this.squashCommits.bind(this),
 		);
 	}
 
-	async squashCommits(params: {
-		cwd: string;
-		current: string;
-		target: string;
-		commit: string;
-	}) {
+	async squashCommits(
+		params: Infer<typeof inputSchema>,
+	): Promise<McpResult<typeof outputSchema>> {
 		const { current, target, commit: newMessage } = params;
-		const cwd = normalizePath(params.cwd);
-		if (!cwd || !current || !target || !newMessage) {
-			return {
-				content: [
-					{
-						type: 'text',
-						text: 'Faltando parâmetros obrigatórios: cwd, current, target ou commit',
-					},
-				],
-				structuredContent: { error: 'invalid_input', squashed: false },
-			};
+		if (!current || !target || !newMessage) {
+			throw new Error(
+				'Faltando parâmetros obrigatórios: cwd, current, target ou commit',
+			);
 		}
-		if (isProtectedBranch(current, cwd)) {
-			const schema = getBranchSchema(cwd);
+		if (isProtectedBranch(current)) {
+			const schema = getBranchSchema();
 			const protectedList = Object.values(schema).join(', ');
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Operação não permitida: a branch '${current}' é uma branch protegida do schema. Apenas branches de feature/fix podem ter o histórico alterado. Branches protegidas: ${protectedList}`,
-					},
-				],
-				structuredContent: { error: 'protected_branch', squashed: false },
-			};
+			throw new Error(
+				`Operation not allowed: the branch '${current}' is a protected branch from the schema. Only feature/fix branches can have their history altered. Protected branches: ${protectedList}`,
+			);
 		}
-		const refExists = (ref: string) => refExistsHelper(ref, cwd);
-		attempt(() =>
-			execSync(`git fetch origin ${target}`, { encoding: 'utf8', cwd }),
-		);
-		attempt(() =>
-			execSync(`git fetch origin ${current}`, { encoding: 'utf8', cwd }),
-		);
-		const baseCandidates = [`origin/${target}`, `${target}`];
-		const headCandidates = [`${current}`, `origin/${current}`];
+		await gitService.tryFetch(target);
+		await gitService.tryFetch(current);
+		// we'll check for refs both locally and on origin using refExists opts
 		let baseRefUsed: string | null = null;
 		let gitHashesOut = '';
 		let lastErr: unknown = null;
-		for (const baseRef of baseCandidates) {
-			for (const headRef of headCandidates) {
-				if (!refExists(baseRef) || !refExists(headRef)) continue;
-				const rangeTry = `${baseRef}..${headRef}`;
-				try {
-					gitHashesOut = execSync(`git log ${rangeTry} --pretty=format:'%H'`, {
-						encoding: 'utf8',
-						cwd,
-					}).trim();
-					baseRefUsed = baseRef;
-					break;
-				} catch (e) {
-					lastErr = e;
-				}
-			}
-			if (gitHashesOut) break;
+		const baseExists = await gitService.refExists(params.target, {
+			where: 'remote',
+			remote: 'origin',
+		});
+		const headExists = await gitService.refExists(params.current, {
+			where: 'local',
+		});
+		if (!baseExists || !headExists) {
+			throw new Error(
+				`Base or head reference does not exist. Check if branch '${target}' exists locally or on origin.`,
+			);
+		}
+		try {
+			gitHashesOut = await gitService.logRange(params.target, params.current, {
+				format: 'hashes',
+			});
+			baseRefUsed = params.target;
+		} catch (e) {
+			lastErr = e;
 		}
 		if (!gitHashesOut) {
 			const msg = lastErr
 				? getErrorMessage(lastErr)
-				: 'erro desconhecido ao executar git log';
-			const help = `Tentei refs: bases=${baseCandidates.join(', ')} heads=${headCandidates.join(', ')}. Verifique se a branch '${target}' existe localmente ou no origin.`;
-			return {
-				content: [
-					{ type: 'text', text: `Falha ao listar commits: ${msg}. ${help}` },
-				],
-				structuredContent: { error: msg, squashed: false },
-			};
+				: 'unknown error running git log';
+			const help = `Tried refs: bases=${params.target} heads=${params.current}. Check if branch '${target}' exists locally or on origin.`;
+			throw new Error(`Failed to list commits: ${msg}. ${help}`);
 		}
 		const hashes = gitHashesOut.split('\n').filter(Boolean);
 		if (hashes.length === 0) {
-			return {
-				content: [
-					{ type: 'text', text: 'Nenhum commit encontrado entre as branches.' },
-				],
-				structuredContent: { error: 'no_commits', squashed: false },
-			};
+			throw new Error('No commits found between branches.');
 		}
-		let backupTag;
+		// We will rely on the remote 'origin' as the backup. Ensure the current
+		// branch is pushed and in sync on origin before
+		// attempting any history rewrite. This gives us a safe remote state to
+		// fall back to in case the local restore path needs to update origin.
 		try {
-			backupTag = createBackupTag(current, cwd);
+			await gitService.push('origin', current);
+			// fetch the branch state from origin to ensure subsequent operations can
+			// reference origin/<branch> safely.
+			await gitService.fetch(current);
 		} catch (e) {
 			const msg = getErrorMessage(e);
-			return {
-				content: [{ type: 'text', text: `Falha ao criar backup: ${msg}` }],
-				structuredContent: { error: msg, squashed: false },
-			};
+			throw new Error(
+				`Failed to push branch '${current}' to origin before squashing: ${msg}`,
+			);
+		}
+
+		// Prevent destructive operations when the working tree contains
+		// uncommitted or untracked files: squashing may rewrite history and a
+		// later restore will perform a hard reset which would discard these.
+		const statusOut = await gitService.statusPorcelain();
+		if (statusOut && statusOut.trim().length > 0) {
+			throw new Error(
+				`Working tree is not clean. Please commit or stash changes and remove untracked files before squashing. 'git status --porcelain' output:\n${statusOut}`,
+			);
 		}
 		if (hashes.length === 1) {
 			try {
-				execSync(`git checkout ${current}`, { encoding: 'utf8', cwd });
-				const msgFile = path.join(cwd, `.git/SQUASH_MSG_${Date.now()}.txt`);
-				fs.writeFileSync(msgFile, newMessage, 'utf8');
+				await gitService.checkoutBranch(current);
+				const msgFile = cwdJoin(`.git/SQUASH_MSG_${Date.now()}.txt`);
+				await fs.writeFile(msgFile, newMessage, 'utf8');
 				try {
-					execSync(`git commit --amend -F "${msgFile}"`, {
-						encoding: 'utf8',
-						cwd,
-					});
+					// use unified API: commit with msgFile and amend option
+					await gitService.commit({ msgFile, amend: true });
 				} finally {
-					attempt(() => fs.unlinkSync(msgFile));
+					await attempt(() => fs.unlink(msgFile));
 				}
-				execSync(`git push --force origin ${current}`, {
-					encoding: 'utf8',
-					cwd,
-				});
-				return {
-					content: [
-						{
-							type: 'text',
-							text: `Mensagem do único commit atualizada com sucesso. Backup criado na tag: ${backupTag}`,
-						},
-					],
-					structuredContent: { squashed: true, commitCount: 1, backupTag },
-				};
+				await gitService.push('origin', current, { force: true });
+				return buildTextResult<typeof outputSchema>(
+					'Single commit message updated successfully. Remote origin contains a backup of the previous state.',
+					{ squashed: true, commitCount: 1 },
+				);
 			} catch (e) {
 				const msg = getErrorMessage(e);
-				return {
-					content: [
-						{
-							type: 'text',
-							text: `Falha ao atualizar mensagem do commit: ${msg}. Backup disponível em tag: ${backupTag}`,
-						},
-					],
-					structuredContent: { error: msg, squashed: false, backupTag },
-				};
+				await this.restoreBackup(current);
+				throw new Error(`Failed to update commit message: ${msg}`);
 			}
 		}
 		try {
-			execSync(`git checkout ${current}`, { encoding: 'utf8', cwd });
+			await gitService.checkoutBranch(current);
 			const baseToUse = baseRefUsed || `${target}`;
-			execSync(`git reset --soft ${baseToUse}`, { encoding: 'utf8', cwd });
-			const msgFile = path.join(cwd, `.git/SQUASH_MSG_${Date.now()}.txt`);
-			fs.writeFileSync(msgFile, newMessage, 'utf8');
+			await gitService.reset({ mode: 'soft', ref: baseToUse });
+			const msgFile = cwdJoin(`.git/SQUASH_MSG_${Date.now()}.txt`);
+			await fs.writeFile(msgFile, newMessage, 'utf8');
 			try {
-				execSync(`git commit -F "${msgFile}"`, { encoding: 'utf8', cwd });
+				await gitService.commit({ msgFile });
 			} finally {
-				attempt(() => fs.unlinkSync(msgFile));
+				await attempt(() => fs.unlink(msgFile));
 			}
-			execSync(`git push --force origin ${current}`, { encoding: 'utf8', cwd });
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `${hashes.length} commits foram combinados em um único commit com sucesso. Backup criado na tag: ${backupTag}`,
-					},
-				],
-				structuredContent: {
-					squashed: true,
-					commitCount: hashes.length,
-					backupTag,
-				},
-			};
+			await gitService.push('origin', current, { force: true });
+			return buildTextResult<typeof outputSchema>(
+				`${hashes.length} commits were successfully combined into a single commit. Remote 'origin' contains a backup of the previous state.`,
+				{ squashed: true, commitCount: hashes.length },
+			);
 		} catch (e) {
 			const msg = getErrorMessage(e);
-			return {
-				content: [
-					{
-						type: 'text',
-						text: `Falha ao fazer squash dos commits: ${msg}. Backup disponível em tag: ${backupTag}`,
-					},
-				],
-				structuredContent: { error: msg, squashed: false, backupTag },
-			};
+			await this.restoreBackup(current);
+			throw new Error(`Failed to squash commits: ${msg}`);
+		}
+	}
+
+	private async restoreBackup(current: string) {
+		await gitService.fetch(current);
+
+		try {
+			await gitService.checkoutBranch(current);
+			await gitService.reset({ mode: 'hard', ref: `origin/${current}` });
+			await gitService.clean();
+		} catch (e: unknown) {
+			throw new Error(
+				`Failed to restore local branch '${current}' from origin/${current}: ${getErrorMessage(e)}`,
+			);
 		}
 	}
 }

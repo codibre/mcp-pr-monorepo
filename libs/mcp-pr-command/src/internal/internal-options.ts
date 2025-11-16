@@ -7,8 +7,8 @@ import {
 
 export const DEFAULT_BRANCH_SCHEMA: BranchSchema = {
 	production: 'main',
-	homologation: 'staging',
-	development: 'develop',
+	homologation: 'main',
+	development: 'main',
 };
 
 export const DEFAULT_BRANCH_MAPPING: Record<string, BranchMappingItem> = {

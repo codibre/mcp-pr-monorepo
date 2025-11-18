@@ -9,6 +9,7 @@
         "dist/**"
       ]
     },
+  
     "test": {},
     "test:scope": {},
     "test:cov": {

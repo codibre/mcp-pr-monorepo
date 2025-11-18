@@ -76,11 +76,16 @@ export class GhApiClient implements GhClient {
 		const client = await this.getOctokit();
 		if (or) {
 			try {
+				// When calling repository-scoped API, ensure head filters PRs from the
+				// same repository. The GitHub API supports `user:ref` format for head;
+				// if caller passed only a branch name, prefix it with the repo owner to
+				// avoid matching PRs from forks or other repos.
+				const headParam = head.includes(':') ? head : `${or.owner}:${head}`;
 				const res = await client.rest.pulls.list({
 					owner: or.owner,
 					repo: or.repo,
 					base,
-					head,
+					head: headParam,
 				});
 				const data = res.data ?? [];
 				return data.map((d) => ({ number: d.number }));
@@ -88,7 +93,10 @@ export class GhApiClient implements GhClient {
 				// fallthrough to search
 			}
 		}
-		const q = `is:pr base:${base} head:${head}`;
+		// Build a search query; if we know owner/repo, include it to narrow
+		// results to the current repository.
+		const repoQualifier = or ? ` repo:${or.owner}/${or.repo}` : '';
+		const q = `is:pr${repoQualifier} base:${base} head:${head}`;
 		const res = await client.request('GET /search/issues', { q });
 		const data = res.data as { items?: Array<{ number?: number }> };
 		const items = data.items ?? [];

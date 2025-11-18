@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.4](///compare/mcp-pr-command@0.6.3...mcp-pr-command@0.6.4) (2025-11-18)
+### Fixes:
+
+<details>
+<summary>**gh-client-api:** filter PRs by head and repo when possible</summary>
+
+
+> Ensure prList prefixes head with owner when repository owner can be determined and adds a repo: qualifier to the search fallback. This prevents unrelated PRs from being returned for the given head/base pair.
+
+
+
+[View commit `937c0b7`](https://github.com/codibre/mcp-pr-monorepo/commit/937c0b7)
+
+
+</details>
+
 ## [0.6.3](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.6.2...mcp-pr-command@0.6.3) (2025-11-16)
 ### Fixes:
 

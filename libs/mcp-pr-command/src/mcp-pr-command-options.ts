@@ -90,7 +90,11 @@ export interface McpPRCommandOptions {
 	 *   - Respect template structure when adding card links.\n
 	 *   - Card information may go just below card link.\n   * `
 	 */
-	defaultPrompt?: string;
+	defaultPrompt?:
+		| string
+		| {
+				additional: string;
+		  };
 
 	/**
 	 * Complementary description to be used by the MCP for additional context.

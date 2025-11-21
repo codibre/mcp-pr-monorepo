@@ -16,10 +16,10 @@ describe('buildCopilotPrompt (with language in context)', () => {
 	});
 
 	it('should replace placeholder in custom basePullRequestPrompt', () => {
-		const oldPrompt = context.basePullRequestPrompt;
-		context.basePullRequestPrompt = 'Hello %LANGUAGE%!';
+		const oldPrompt = context.defaultPrompt;
+		context.defaultPrompt = 'Hello %LANGUAGE%!';
 		const prompt = buildCopilotPrompt({ changesFile: 'file.txt' });
 		expect(prompt).toContain('Hello Portuguese!');
-		context.basePullRequestPrompt = oldPrompt;
+		context.defaultPrompt = oldPrompt;
 	});
 });

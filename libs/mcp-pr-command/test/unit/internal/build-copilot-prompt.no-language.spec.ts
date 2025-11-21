@@ -15,12 +15,12 @@ describe('buildCopilotPrompt (no language in context)', () => {
 	});
 
 	it('should replace placeholder in custom basePullRequestPrompt', () => {
-		const oldPrompt = context.basePullRequestPrompt;
-		context.basePullRequestPrompt = 'Hello %LANGUAGE%!';
+		const oldPrompt = context.defaultPrompt;
+		context.defaultPrompt = 'Hello %LANGUAGE%!';
 		const prompt = buildCopilotPrompt({ changesFile: 'file.txt' });
 		expect(prompt).toContain(
 			'Hello same language of README.MD, commits or pull request template!',
 		);
-		context.basePullRequestPrompt = oldPrompt;
+		context.defaultPrompt = oldPrompt;
 	});
 });

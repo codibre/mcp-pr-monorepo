@@ -55,12 +55,10 @@ describe('GhApiClient', () => {
 		const request = jest
 			.fn()
 			.mockResolvedValue({ data: { items: [{ number: 77 }] } });
-		const OctokitMock = jest
-			.fn()
-			.mockImplementation(() => ({
-				rest: { pulls: { list: pullsList } },
-				request,
-			}));
+		const OctokitMock = jest.fn().mockImplementation(() => ({
+			rest: { pulls: { list: pullsList } },
+			request,
+		}));
 		jest.doMock('@octokit/rest', () => ({ Octokit: OctokitMock }));
 
 		const { GhApiClient } = require('src/internal/gh-client-api');
@@ -80,11 +78,9 @@ describe('GhApiClient', () => {
 		}));
 
 		const get = jest.fn().mockRejectedValue(new Error('boom'));
-		const request = jest
-			.fn()
-			.mockResolvedValue({
-				data: { items: [{ title: 'S', body: 'B', html_url: 'U' }] },
-			});
+		const request = jest.fn().mockResolvedValue({
+			data: { items: [{ title: 'S', body: 'B', html_url: 'U' }] },
+		});
 		const OctokitMock = jest
 			.fn()
 			.mockImplementation(() => ({ rest: { pulls: { get } }, request }));
@@ -119,12 +115,10 @@ describe('GhApiClient', () => {
 		}));
 
 		const create = jest.fn().mockResolvedValue({ data: {} });
-		const OctokitMock = jest
-			.fn()
-			.mockImplementation(() => ({
-				rest: { pulls: { create } },
-				request: jest.fn(),
-			}));
+		const OctokitMock = jest.fn().mockImplementation(() => ({
+			rest: { pulls: { create } },
+			request: jest.fn(),
+		}));
 		jest.doMock('@octokit/rest', () => ({ Octokit: OctokitMock }));
 
 		const fsPromises = require('fs/promises');
@@ -149,22 +143,21 @@ describe('GhApiClient', () => {
 				if (cmd === 'gh auth token') return 'token';
 				// first two candidates throw, third returns a mixed remote list that includes a matching url
 				if (call <= 2) throw new Error('boom');
-				if (cmd.includes('git'))
-					{return 'origin	git@github.com:good/rep.git (fetch)\norigin	ssh://git@github.com:bad/skip.git (push)';}
+				if (cmd.includes('git')) {
+					return 'origin	git@github.com:good/rep.git (fetch)\norigin	ssh://git@github.com:bad/skip.git (push)';
+				}
 				return '';
 			},
 		}));
 
-		const OctokitMock = jest
-			.fn()
-			.mockImplementation(() => ({
-				request: jest.fn(),
-				rest: {
-					pulls: {
-						list: jest.fn().mockResolvedValue({ data: [{ number: 1 }] }),
-					},
+		const OctokitMock = jest.fn().mockImplementation(() => ({
+			request: jest.fn(),
+			rest: {
+				pulls: {
+					list: jest.fn().mockResolvedValue({ data: [{ number: 1 }] }),
 				},
-			}));
+			},
+		}));
 		jest.doMock('@octokit/rest', () => ({ Octokit: OctokitMock }));
 
 		const { GhApiClient } = require('src/internal/gh-client-api');
@@ -193,12 +186,10 @@ describe('GhApiClient', () => {
 	it('prCreate throws when owner/repo cannot be resolved', async () => {
 		// no git remotes -> resolveOwnerRepoOrThrow should throw
 		jest.doMock('src/internal/run', () => ({ run: async () => '' }));
-		const OctokitMock = jest
-			.fn()
-			.mockImplementation(() => ({
-				request: jest.fn(),
-				rest: { pulls: { create: jest.fn() } },
-			}));
+		const OctokitMock = jest.fn().mockImplementation(() => ({
+			request: jest.fn(),
+			rest: { pulls: { create: jest.fn() } },
+		}));
 		jest.doMock('@octokit/rest', () => ({ Octokit: OctokitMock }));
 
 		const fsPromises = require('fs/promises');
@@ -407,12 +398,10 @@ describe('GhApiClient', () => {
 		}));
 
 		const update = jest.fn().mockResolvedValue({});
-		const OctokitMock = jest
-			.fn()
-			.mockImplementation(() => ({
-				rest: { pulls: { update } },
-				request: jest.fn(),
-			}));
+		const OctokitMock = jest.fn().mockImplementation(() => ({
+			rest: { pulls: { update } },
+			request: jest.fn(),
+		}));
 		jest.doMock('@octokit/rest', () => ({ Octokit: OctokitMock }));
 
 		const fsPromises = require('fs/promises');

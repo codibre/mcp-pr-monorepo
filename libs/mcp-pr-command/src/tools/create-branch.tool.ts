@@ -26,6 +26,9 @@ const inputSchema = {
 		.describe(
 			'Optional base branch to create the new branch from. If not informed will be chosen based on branch schema. Only inform this if user explicitly requests so.',
 		),
+	userExplicitlyRequestedCreation: z
+		.boolean()
+		.describe('Indicates if the user explicitly requested branch creation'),
 	cwd: z
 		.string()
 		.min(1)
@@ -59,7 +62,9 @@ If type is specified within user prompt, use that instead.
 This examples are the defualt branch schema, too. You can inform the user
 of this default values if questioned about it.
 
-IMPORTANT: If user requests to open a PR, don't use this tool, as he's already positioned in the correct branch.
+IMPORTANT:
+* If user requests to open a PR, don't use this tool, as he's already positioned in the correct branch.
+* Only use this tool if user explicitly requests to create a branch.
 `,
 				inputSchema,
 				outputSchema,
@@ -82,6 +87,12 @@ IMPORTANT: If user requests to open a PR, don't use this tool, as he's already p
 	): Promise<McpResult<typeof outputSchema>> {
 		const { type, suffix, baseBranch } = params;
 		const schema = getBranchSchema();
+
+		if (!params.userExplicitlyRequestedCreation) {
+			throw new Error(
+				'Branch creation aborted: user did not explicitly request branch creation.',
+			);
+		}
 
 		// Determine default base branch if not provided
 		const defaultBase = schema[context.branchMapping[type].origin] ?? 'main';

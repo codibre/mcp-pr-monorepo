@@ -31,8 +31,9 @@ describe('GitService edge cases', () => {
 		// make run throw for show-ref and ls-remote
 		jest.doMock('src/internal/run', () => ({
 			run: jest.fn().mockImplementation(async (cmd: string) => {
-				if (cmd.includes('ls-remote') || cmd.includes('show-ref'))
-					{throw new Error('not found');}
+				if (cmd.includes('ls-remote') || cmd.includes('show-ref')) {
+					throw new Error('not found');
+				}
 				return '';
 			}),
 			command: (cmd: string) => ({

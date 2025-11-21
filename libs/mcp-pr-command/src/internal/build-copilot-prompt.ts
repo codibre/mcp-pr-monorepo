@@ -34,6 +34,17 @@ const commonInstructions = `
 
 const placeholderRegex = /%(\w+)%/g;
 
+function getBasePrompt() {
+	if (typeof context.defaultPrompt === 'object') {
+		return `${commonInstructions}
+
+# Complementary information
+
+${context.defaultPrompt.additional}`;
+	}
+	return context.defaultPrompt ?? commonInstructions;
+}
+
 export function buildCopilotPrompt({
 	prTemplate,
 	prContentFile,
@@ -53,7 +64,7 @@ export function buildCopilotPrompt({
 	);
 
 	if (context.language) placeHolders.LANGUAGE = context.language;
-	let basePrompt = context.basePullRequestPrompt ?? commonInstructions;
+	let basePrompt = getBasePrompt();
 	basePrompt = basePrompt.replace(
 		placeholderRegex,
 		(_match, key: string) => placeHolders[key] ?? _match,

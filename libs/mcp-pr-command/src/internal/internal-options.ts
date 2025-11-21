@@ -35,7 +35,11 @@ export interface InternalOptions {
 	cardLinkWebSitePattern?: RegExp;
 	prLinkInferPattern?: string;
 	language?: string;
-	basePullRequestPrompt?: string;
+	defaultPrompt?:
+		| string
+		| {
+				additional: string;
+		  };
 	branchSchema: BranchSchema | BranchSchemaCallback;
 	branchMapping: Record<ChangingBranchType, BranchMappingItem>;
 }

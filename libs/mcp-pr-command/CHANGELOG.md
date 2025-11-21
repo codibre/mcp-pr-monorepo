@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.7.0](https://github.com/codibre/mcp-pr-monorepo/compare/mcp-pr-command@0.6.4...mcp-pr-command@0.7.0) (2025-11-21)
+
+### Pull Requests:
+
+- [#15 - Require explicit branch creation confirmation and add defaultPrompt option](https://github.com/codibre/mcp-pr-monorepo/pull/15)
+
+### Features:
+
+<details>
+<summary>adding additional prompt option</summary>
+
+
+> Adding an option to user increment
+> default prompt with more custom instructions
+
+
+
+[View commit `a3a1b19`](https://github.com/codibre/mcp-pr-monorepo/commit/a3a1b19)
+
+
+</details>
+
+### Fixes:
+
+<details>
+<summary>requiring explicitly confirmation for branch creation</summary>
+
+
+> As this method is being used when asking
+> to create a pr, an option to force orquestrator
+> to confirm that user explicitly asked for
+> branch creation has been added, to try to
+> influence orquestrator to not use it wrong
+
+
+
+[View commit `49ce243`](https://github.com/codibre/mcp-pr-monorepo/commit/49ce243)
+
+
+</details>
+
 ## [0.6.4](///compare/mcp-pr-command@0.6.3...mcp-pr-command@0.6.4) (2025-11-18)
 ### Fixes:
 

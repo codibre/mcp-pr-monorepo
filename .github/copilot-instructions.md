@@ -26,3 +26,9 @@ This is a monorepo, so when editing a subproject, prefer to run commands in the 
 - When a test is wrong, always fix it, unless you tried three times and it is still failing. In this case, ask for help;
 - If you find errors in the code tested, report them before trying to fix them. Explain why it's wrong so the dev can evaluate it. Never ask for permission to do so, just report it;
 - When mocking a function or object, avoid mocking through index files, as they'll export readonly elements. Mock using direct paths to the file that declares them instead.
+
+# About Pull Requests
+
+- Pull request must be in english
+- Follow PR template;
+- A random GIF images must be selected and added to the PR description for fun;

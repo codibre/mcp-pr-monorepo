@@ -55,6 +55,29 @@ const typeMap = {
 const packageName = pkg.name;
 const repoUrl = detectRepoUrl();
 
+// Gate (subpackage runs only): skip when no commit touching THIS package's
+// directory, since its own last `<pkgName>@<v>` tag, warrants a release.
+// Without it a sibling's feat/fix/BREAKING CHANGE releases or majors every
+// package in range (the fluent-iterable 2.0.0 incident). Mirrors the
+// commitsOpts.path scoping configured below; rules live in
+// scripts/conventional-increment.js (single source of truth).
+if (path.resolve(top) !== path.resolve(cwd)) {
+  const { computeIncrement } = require(path.resolve(top, 'scripts/conventional-increment.js'));
+  let gate;
+  try {
+    gate = computeIncrement(cwd);
+  } catch (e) {
+    console.error('[release-it] Pre-check failed. Aborting to prevent false bumps.\nError:', e.message || e);
+    process.exit(1);
+  }
+  if (!gate.increment) {
+    const timeframe = gate.tag ? `since ${gate.tag}` : 'in history';
+    console.log(`\n\x1b[33m[release-it] No feat/fix/perf or BREAKING CHANGE commits touching ${gate.pkgName}'s directory ${timeframe}. Skipping release.\x1b[0m\n`);
+    process.exit(0);
+  }
+  console.log(`[release-it] ${gate.pkgName}: ${gate.increment} bump (${gate.tag || 'full history'}..HEAD, path-scoped)`);
+}
+
 // Derive owner/repository from repoUrl for gh API calls (single place)
 let ghOwner = '';
 let ghRepo = '';
@@ -93,12 +116,16 @@ module.exports = {
     // Decide tagName based on whether we're at the repository root (monorepo handling)
     let tagName = 'v${version}';
     let commitMessage = 'chore: release v${version} [skip ci]';
+    let tagMatch;
     try {
       if (path.resolve(top) !== path.resolve(cwd)) {
         // Not at repo root -> try to use package name
         if (packageName) {
           tagName = packageName + '@${version}';
           commitMessage = 'chore(release): release ' + packageName + '@${version} [skip ci]';
+          // Per-package tag namespace: the changelog/recommended-bump range
+          // must start at THIS package's last tag, not any sibling's.
+          tagMatch = packageName + '@*';
         }
       }
     } catch (e) {
@@ -106,6 +133,7 @@ module.exports = {
     }
     return {
       tagName,
+      ...(tagMatch ? { tagMatch } : {}),
       commitMessage,
       requireCleanWorkingDir: false,
       commitsPath: '.',
@@ -146,6 +174,12 @@ module.exports = {
       ignoreRecommendedBump: false,
       strictSemVer: true,
       commitsPath: '.',
+      // Scope the RECOMMENDED BUMP to this directory: without it every commit
+      // in <lastTag>..HEAD (any sibling package's BREAKING CHANGE included)
+      // feeds conventional-recommended-bump and majors this package.
+      commitsOpts: {
+        path: '.',
+      },
       gitRawCommitsOpts: {
         path: '.',
         // subject, blank line, body, blank line, hash on its own line
